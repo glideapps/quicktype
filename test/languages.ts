@@ -1348,6 +1348,7 @@ export const KotlinLanguage: Language = {
         // instead of rejecting it.
         "nested-intersection-union.schema",
         "class-with-additional.schema",
+        "mixed-additional-properties.schema",
         ...skipsMapValueValidation,
         // IllegalArgumentException
         // KlaxonException: Need to extract inside

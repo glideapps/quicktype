@@ -13,6 +13,10 @@ export class FlowRenderer extends TypeScriptFlowBaseRenderer {
         return this._tsFlowOptions.preferUnknown ? "mixed" : "any";
     }
 
+    protected get undefinedType(): string {
+        return "void";
+    }
+
     protected forbiddenNamesForGlobalNamespace(): string[] {
         return [
             "Class",
