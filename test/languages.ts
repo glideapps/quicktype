@@ -1585,6 +1585,9 @@ export const PikeLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     skipSchema: [
         "optional-property.schema",
         // no implicit cast int <-> float in Pike

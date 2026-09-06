@@ -363,7 +363,7 @@ export class PikeRenderer extends ConvenienceRenderer {
                     const pattern = patternForType(p.type);
                     if (pattern !== undefined)
                         this.emitLine(
-                            `if (${optionalGuard}!Regexp("${stringEscape(pattern)}")->match(${jsonValue})) error("String does not match pattern");`,
+                            `if (${optionalGuard}!Regexp(string_to_utf8("${stringEscape(pattern)}"))->match(string_to_utf8(${jsonValue}))) error("String does not match pattern");`,
                         );
                     const requiredType =
                         p.type instanceof UnionType
