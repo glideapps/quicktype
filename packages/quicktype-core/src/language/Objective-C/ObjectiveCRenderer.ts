@@ -921,12 +921,12 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                                     minMaxLengthForType(property.type) ?? [];
                                 if (minLength !== undefined) {
                                     this.emitLine(
-                                        `if (dict[@"${objectiveCStringEscape(jsonName)}"] && [dict[@"${objectiveCStringEscape(jsonName)}"] length] < ${minLength}) return nil;`,
+                                        `if (dict[@"${objectiveCStringEscape(jsonName)}"] && [dict[@"${objectiveCStringEscape(jsonName)}"] lengthOfBytesUsingEncoding:NSUTF32StringEncoding] / 4 < ${minLength}) return nil;`,
                                     );
                                 }
                                 if (maxLength !== undefined) {
                                     this.emitLine(
-                                        `if ([dict[@"${objectiveCStringEscape(jsonName)}"] length] > ${maxLength}) return nil;`,
+                                        `if ([dict[@"${objectiveCStringEscape(jsonName)}"] lengthOfBytesUsingEncoding:NSUTF32StringEncoding] / 4 > ${maxLength}) return nil;`,
                                     );
                                 }
                                 if (property.type.kind === "uuid") {
