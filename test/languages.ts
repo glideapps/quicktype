@@ -951,6 +951,9 @@ export const ObjectiveCLanguage: Language = {
         "blns-object.json",
     ],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     skipSchema: ["optional-property.schema"],
     rendererOptions: { functions: "true" },
     quickTestRendererOptions: [],
