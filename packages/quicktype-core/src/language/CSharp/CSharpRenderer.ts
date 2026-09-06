@@ -40,6 +40,16 @@ import {
     noFollow,
 } from "./utils.js";
 
+const objectMemberNames = [
+    "ToString",
+    "GetHashCode",
+    "Finalize",
+    "Equals",
+    "GetType",
+    "MemberwiseClone",
+    "ReferenceEquals",
+];
+
 export class CSharpRenderer extends ConvenienceRenderer {
     public constructor(
         targetLanguage: TargetLanguage,
@@ -73,13 +83,7 @@ export class CSharpRenderer extends ConvenienceRenderer {
         return {
             names: [
                 classNamed,
-                "ToString",
-                "GetHashCode",
-                "Finalize",
-                "Equals",
-                "GetType",
-                "MemberwiseClone",
-                "ReferenceEquals",
+                ...objectMemberNames,
                 ...(this._csOptions.useRecords
                     ? ["Clone", "EqualityContract", "PrintMembers"]
                     : []),
@@ -92,7 +96,10 @@ export class CSharpRenderer extends ConvenienceRenderer {
         _: UnionType,
         unionNamed: Name,
     ): ForbiddenWordsInfo {
-        return { names: [unionNamed], includeGlobalForbidden: true };
+        return {
+            names: [unionNamed, ...objectMemberNames],
+            includeGlobalForbidden: true,
+        };
     }
 
     protected makeNamedTypeNamer(): Namer {
