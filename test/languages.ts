@@ -1365,6 +1365,9 @@ export const KotlinLanguage: Language = {
         "keyword-unions.schema",
     ],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     // The default framework is jackson; this fixture deliberately pins
     // klaxon so the Klaxon renderer keeps end-to-end coverage.
     rendererOptions: { framework: "klaxon" },
@@ -1407,6 +1410,9 @@ export const KotlinJacksonLanguage: Language = {
     skipJSON: [],
     skipSchema: ["optional-property.schema", "keyword-unions.schema"],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     rendererOptions: { framework: "jackson" },
     quickTestRendererOptions: [],
     sourceFiles: ["src/language/Kotlin/index.ts"],

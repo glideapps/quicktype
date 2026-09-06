@@ -405,8 +405,8 @@ export class KotlinKlaxonRenderer extends KotlinRenderer {
                     if (min !== undefined) emitValidation(validate(">=", min));
                     if (max !== undefined) emitValidation(validate("<=", max));
                     const length = p.isOptional
-                        ? `${value}?.let { require(it.length`
-                        : `require(${value}.length`;
+                        ? `${value}?.let { require(it.codePointCount(0, it.length)`
+                        : `require(${value}.codePointCount(0, ${value}.length)`;
                     const emitLength = (operator: string, bound: number) =>
                         emitValidation(
                             `${length} ${operator} ${bound}${p.isOptional ? ") }" : ")"}`,
