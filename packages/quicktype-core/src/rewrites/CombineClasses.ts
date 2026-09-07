@@ -5,6 +5,7 @@ import {
     type ClassProperty,
     ClassType,
     type Type,
+    haveSameIdentityAttributes,
     setOperationCasesEqual,
 } from "../Type/Type.js";
 import type { TypeGraph } from "../Type/TypeGraph.js";
@@ -110,14 +111,20 @@ function tryAddToClique(
     onlyWithSameProperties: boolean,
 ): boolean {
     for (const prototype of clique.prototypes) {
-        if (prototype.structurallyCompatible(c)) {
+        if (
+            haveSameIdentityAttributes(prototype, c) &&
+            prototype.structurallyCompatible(c)
+        ) {
             clique.members.push(c);
             return true;
         }
     }
 
     for (const prototype of clique.prototypes) {
-        if (canBeCombined(prototype, c, onlyWithSameProperties)) {
+        if (
+            haveSameIdentityAttributes(prototype, c) &&
+            canBeCombined(prototype, c, onlyWithSameProperties)
+        ) {
             clique.prototypes.push(c);
             clique.members.push(c);
             return true;

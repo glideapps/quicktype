@@ -1,0 +1,16 @@
+{
+  "data": {
+    "grid": {
+      "config": {
+        "items": [
+          { "id": "config-component" }
+        ]
+      },
+      "props": {
+        "items": [
+          { "id": "props-component" }
+        ]
+      }
+    }
+  }
+}
