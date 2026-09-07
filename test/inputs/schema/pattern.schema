@@ -19,6 +19,18 @@
           "pattern": "c[.]*"
         }
       ]
+    },
+    "RegExp": {
+      "type": "object",
+      "title": "RegExp",
+      "properties": {
+        "pattern3": {
+          "type": "string",
+          "pattern": "d[.]*"
+        }
+      },
+      "required": ["pattern3"],
+      "additionalProperties": false
     }
   },
   "required": ["pattern1", "pattern2", "union"]

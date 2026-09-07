@@ -60,6 +60,7 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             "Array",
             "JSON",
             "Error",
+            "RegExp",
         ];
     }
 
