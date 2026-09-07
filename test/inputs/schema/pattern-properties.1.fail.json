@@ -1,0 +1,8 @@
+{
+  "alternators": {
+    "1": {
+      "voltage": "not a number",
+      "name": "Main alternator"
+    }
+  }
+}

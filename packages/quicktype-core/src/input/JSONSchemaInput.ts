@@ -1141,14 +1141,20 @@ async function addTypesInSchema(
             }
 
             let additionalProperties = schema.additionalProperties;
-            // This is an incorrect hack to fix an issue with a Go->Schema generator:
-            // https://github.com/quicktype/quicktype/issues/976
+            // Treat a single pattern property as additional properties since
+            // per-pattern typed properties aren't supported.
             if (
                 additionalProperties === undefined &&
                 typeof schema.patternProperties === "object" &&
-                hasOwnProperty(schema.patternProperties, ".*")
+                schema.patternProperties !== null
             ) {
-                additionalProperties = schema.patternProperties[".*"];
+                const patterns = Object.getOwnPropertyNames(
+                    schema.patternProperties,
+                );
+                if (patterns.length === 1) {
+                    additionalProperties =
+                        schema.patternProperties[patterns[0]];
+                }
             }
 
             // Handle unevaluatedProperties if additionalProperties is not defined

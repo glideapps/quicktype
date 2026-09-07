@@ -1,0 +1,12 @@
+{
+  "alternators": {
+    "1": {
+      "voltage": 14.2,
+      "name": "Main alternator"
+    },
+    "backup": {
+      "voltage": 13.8,
+      "name": "Backup alternator"
+    }
+  }
+}

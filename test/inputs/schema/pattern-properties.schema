@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Electrical",
+  "type": "object",
+  "properties": {
+    "alternators": {
+      "type": "object",
+      "patternProperties": {
+        "(^[A-Za-z0-9]+$)": {
+          "type": "object",
+          "properties": {
+            "voltage": { "type": "number" },
+            "name": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}
