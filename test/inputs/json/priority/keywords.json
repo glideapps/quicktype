@@ -124,16 +124,17 @@
       "FormatException": { "FormatException": 123 },
       "friend": { "friend": 123 },
       "from": { "from": 123 },
+      "from_dict": { "from_dict": 123 },
       "from_json": { "from_json": 123 },
       "func": { "func": 123 },
       "function": { "function": 123 },
       "get": { "get": 123 },
       "global": { "global": 123 },
       "go": { "go": 123 },
-      "goto": { "goto": 123 },
       "dummy": 123
     },
   "obj3": {
+      "goto": { "goto": 123 },
       "guard": { "guard": 123 },
       "Hashable": { "Hashable": 123 },
       "hashCode": { "hashCode": 123 },
@@ -197,10 +198,10 @@
       "newtonsoft": { "newtonsoft": 123 },
       "nil": { "nil": 123 },
       "NO": { "NO": 123 },
-      "noexcept": { "noexcept": 123 },
       "dummy": 123
     },
   "obj4": {
+      "noexcept": { "noexcept": 123 },
       "nonatomic": { "nonatomic": 123 },
       "none": { "none": 123 },
       "None": { "None": 123 },
@@ -264,10 +265,10 @@
       "sbyte": { "sbyte": 123 },
       "sealed": { "sealed": 123 },
       "SEL": { "SEL": 123 },
-      "select": { "select": 123 },
       "dummy": 123
     },
   "obj5": {
+      "select": { "select": 123 },
       "Self": { "Self": 123 },
       "Serializable": { "Serializable": 123 },
       "self": { "self": 123 },
@@ -311,6 +312,7 @@
       "to_json": { "to_json": 123 },
       "top_level": { "top_level": 123 },
       "toString": { "toString": 123 },
+      "to_dict": { "to_dict": 123 },
       "transient": { "transient": 123 },
       "True": { "True": 123 },
       "true": { "true": 123 },
@@ -330,11 +332,11 @@
       "UseSerializers": { "UseSerializers": 123 },
       "unowned": { "unowned": 123 },
       "unsafe": { "unsafe": 123 },
-      "unsigned": { "unsigned": 123 },
-      "ushort": { "ushort": 123 },
       "dummy": 123
     },
   "obj6": {
+      "unsigned": { "unsigned": 123 },
+      "ushort": { "ushort": 123 },
       "using": { "using": 123 },
       "Utf8JsonReader": { "Utf8JsonReader": 123 },
       "Utf8JsonWriter": { "Utf8JsonWriter": 123 },

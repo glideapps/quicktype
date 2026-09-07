@@ -119,6 +119,7 @@ foreach
 FormatException
 friend
 from
+from_dict
 from_json
 func
 function
@@ -297,6 +298,7 @@ TimeZone
 to_json
 top_level
 toString
+to_dict
 transient
 True
 true

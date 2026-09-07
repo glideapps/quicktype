@@ -195,6 +195,12 @@ export class JSONPythonRenderer extends PythonRenderer {
 
     private _haveDateutil = false;
 
+    protected forbiddenForObjectProperties(c: ClassType, className: Name) {
+        const result = super.forbiddenForObjectProperties(c, className);
+        result.names = result.names.concat(["from_dict", "to_dict"]);
+        return result;
+    }
+
     protected emitTypeVar(tvar: string, constraints: Sourcelike): void {
         if (!this.pyOptions.features.typeHints) {
             return;
