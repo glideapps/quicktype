@@ -43,6 +43,8 @@ export type LanguageFeature =
     | "no-defaults"
     | "strict-optional"
     | "date-time"
+    | "date"
+    | "time"
     | "integer"
     | "integer-string"
     | "bool-string"
