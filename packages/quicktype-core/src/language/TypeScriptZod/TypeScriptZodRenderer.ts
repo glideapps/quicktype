@@ -38,6 +38,12 @@ import { legalizeName } from "../JavaScript/utils.js";
 
 import type { typeScriptZodOptions } from "./language.js";
 
+type TypeScriptZodRendererOptions = Omit<
+    OptionValues<typeof typeScriptZodOptions>,
+    "preferUnknown"
+> &
+    Partial<Pick<OptionValues<typeof typeScriptZodOptions>, "preferUnknown">>;
+
 export class TypeScriptZodRenderer extends ConvenienceRenderer {
     /** TypeRefs of object types that participate in a reference cycle.
      * These must be emitted as z.lazy() schemas with an explicit type
@@ -47,7 +53,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
-        protected readonly _options: OptionValues<typeof typeScriptZodOptions>,
+        protected readonly _options: TypeScriptZodRendererOptions,
     ) {
         super(targetLanguage, renderContext);
     }
@@ -141,7 +147,10 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         };
         const match = matchType<Sourcelike>(
             t,
-            (_anyType) => "z.any()",
+            (_anyType) =>
+                this._options.preferUnknown !== false
+                    ? "z.unknown()"
+                    : "z.any()",
             (_nullType) => "z.null()",
             (_boolType) => "z.boolean()",
             (integerType) => numberType(integerType, true),
