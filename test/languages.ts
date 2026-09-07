@@ -1787,6 +1787,8 @@ export const TypeScriptEffectSchemaLanguage: Language = {
         "minmaxlength",
         "bool-string",
         "date-time",
+        "date",
+        "time",
         "integer-string",
         "pattern",
         "minmax",
