@@ -11,10 +11,8 @@ function getChangedFiles(base: string, commit: string): string[] {
     return diff.trim().split("\n");
 }
 
-export function affectedFixtures(
-    changedFiles: string[] | undefined = undefined,
-): Fixture[] {
-    if (changedFiles === undefined) {
+export function affectedFixtures(_changedFiles?: string[]): Fixture[] {
+    if (_changedFiles === undefined) {
         const { GITHUB_BASE_REF: base, GITHUB_SHA: commit } = process.env;
         return commit === undefined
             ? allFixtures
@@ -22,7 +20,9 @@ export function affectedFixtures(
     }
 
     // We can ignore changes in Markdown files
-    changedFiles = _.reject(changedFiles, (file) => _.endsWith(file, ".md"));
+    const changedFiles = _.reject(_changedFiles, (file) =>
+        _.endsWith(file, ".md"),
+    );
 
     // All fixtures are dirty if any changed file is not included as a sourceFile of some fixture.
     const fileDependencies = _.flatMap(
