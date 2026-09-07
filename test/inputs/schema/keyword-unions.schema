@@ -1261,6 +1261,13 @@
             ],
             "title": "union_map"
         },
+        "MarshalJSON": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "MarshalJSON" }
+            ],
+            "title": "union_MarshalJSON"
+        },
         "MapEntry": {
             "oneOf": [
                 { "type": "number" },
@@ -2205,6 +2212,13 @@
                 { "type": "object", "additionalProperties": false, "title": "union" }
             ],
             "title": "union_union"
+        },
+        "UnmarshalJSON": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "UnmarshalJSON" }
+            ],
+            "title": "union_UnmarshalJSON"
         },
         "UseSerializers": {
             "oneOf": [

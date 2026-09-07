@@ -58,6 +58,16 @@ export class GoRenderer extends ConvenienceRenderer {
         return namingFunction;
     }
 
+    protected forbiddenForUnionMembers() {
+        return {
+            names:
+                this._options.justTypes || this._options.justTypesAndPackage
+                    ? []
+                    : ["MarshalJSON", "UnmarshalJSON"],
+            includeGlobalForbidden: false,
+        };
+    }
+
     protected makeEnumCaseNamer(): Namer {
         return namingFunction;
     }
