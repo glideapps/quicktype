@@ -53,6 +53,7 @@ export class DartRenderer extends ConvenienceRenderer {
     >();
 
     private _needEnumValues = false;
+    private _needDateTimeParser = false;
 
     private classCounter = 0;
 
@@ -539,6 +540,7 @@ export class DartRenderer extends ConvenienceRenderer {
                         ];
                     case "date-time":
                     case "date":
+                        this._needDateTimeParser = true;
                         if (
                             (transformedStringType.isNullable || isNullable) &&
                             !this._options.requiredProperties
@@ -546,13 +548,13 @@ export class DartRenderer extends ConvenienceRenderer {
                             return [
                                 dynamic,
                                 " == null ? null : ",
-                                "DateTime.parse(",
+                                "_parseDateTime(",
                                 dynamic,
                                 ")",
                             ];
                         }
 
-                        return ["DateTime.parse(", dynamic, ")"];
+                        return ["_parseDateTime(", dynamic, ")"];
                     default:
                         return dynamic;
                 }
@@ -1065,5 +1067,14 @@ export class DartRenderer extends ConvenienceRenderer {
         if (this._needEnumValues) {
             this.emitEnumValues();
         }
+        if (this._needDateTimeParser)
+            this.emitMultiline(`
+DateTime _parseDateTime(String value) {
+    final date = value.substring(0, 10);
+    if (!DateTime.parse(date + 'T00:00:00Z').toIso8601String().startsWith(date)) {
+        throw FormatException('Invalid date-time', value);
+    }
+    return DateTime.parse(value.toUpperCase());
+}`);
     }
 }
