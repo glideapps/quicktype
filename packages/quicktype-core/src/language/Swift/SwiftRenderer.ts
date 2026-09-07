@@ -627,7 +627,11 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     const allPropertiesRedundant = groups.every((group) => {
                         return group.every((p) => p.label === undefined);
                     });
-                    if (!allPropertiesRedundant && c.getProperties().size > 0) {
+                    if (
+                        (!allPropertiesRedundant ||
+                            this._options.codingKeysProtocol.length > 0) &&
+                        c.getProperties().size > 0
+                    ) {
                         this.ensureBlankLine();
                         let enumDeclaration = this.accessLevel;
                         enumDeclaration += "enum CodingKeys: String, CodingKey";
