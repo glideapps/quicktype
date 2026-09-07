@@ -798,6 +798,14 @@ export class PhpRenderer extends ConvenienceRenderer {
             (transformedStringType) => {
                 if (transformedStringType.kind === "date-time") {
                     this.emitLine("$tmp = ", "new DateTime(", args, ");");
+                    this.emitLine("$errors = DateTime::getLastErrors();");
+                    this.emitBlock(
+                        "if ($errors && ($errors['warning_count'] || $errors['error_count']))",
+                        () =>
+                            this.emitLine(
+                                "throw new Exception('Invalid date-time');",
+                            ),
+                    );
                     this.transformDateTime(className, "", ["$tmp"]);
                     this.emitLine("return $tmp;");
                     return;
