@@ -877,6 +877,7 @@ export const SwiftLanguage: Language = {
         { "coding-keys": "false" },
         { "struct-or-class": "class" },
         { sendable: "true" },
+        ["keywords.json", { sendable: "true" }],
         { sendable: "true", "struct-or-class": "class" },
         [
             "simple-object.json",
@@ -889,6 +890,7 @@ export const SwiftLanguage: Language = {
         { "access-level": "internal" },
         { "access-level": "public" },
         { protocol: "equatable" },
+        ["keywords.json", { protocol: "equatable" }],
         ["simple-object.json", { protocol: "hashable" }],
         { protocol: "hashable" },
         [

@@ -680,6 +680,13 @@
             ],
             "title": "union_EnumValues"
         },
+        "Equatable": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "Equatable" }
+            ],
+            "title": "union_Equatable"
+        },
         "equalityContract": {
             "oneOf": [
                 { "type": "number" },
@@ -1373,6 +1380,13 @@
             ],
             "title": "union_nonmutating"
         },
+        "NSObject": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "NSObject" }
+            ],
+            "title": "union_NSObject"
+        },
         "noSuchMethod": {
             "oneOf": [
                 { "type": "number" },
@@ -1792,6 +1806,13 @@
                 { "type": "object", "additionalProperties": false, "title": "self" }
             ],
             "title": "union_self"
+        },
+        "Sendable": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "Sendable" }
+            ],
+            "title": "union_Sendable"
         },
         "serialize": {
             "oneOf": [
