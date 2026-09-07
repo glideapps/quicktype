@@ -872,7 +872,7 @@ export const SwiftLanguage: Language = {
     quickTestRendererOptions: [
         { "support-linux": "false" },
         { "struct-or-class": "class" },
-        { sendable: "true" },
+        ["keywords.json", { sendable: "true" }],
         { sendable: "true", "struct-or-class": "class" },
         [
             "simple-object.json",
@@ -884,7 +884,7 @@ export const SwiftLanguage: Language = {
         { density: "dense" },
         { "access-level": "internal" },
         { "access-level": "public" },
-        { protocol: "equatable" },
+        ["keywords.json", { protocol: "equatable" }],
         ["simple-object.json", { protocol: "hashable" }],
         { protocol: "hashable" },
         [

@@ -95,6 +95,7 @@ encode_quick_type
 Encoder
 enum
 EnumValues	["ready", "done", "ready", "done", "ready", "done", "ready", "done", "ready", "done"]
+Equatable
 equalityContract
 event
 except
@@ -194,6 +195,7 @@ none
 None
 nonlocal
 nonmutating
+NSObject
 noSuchMethod
 not
 not_eq
@@ -254,6 +256,7 @@ SEL
 select
 Self
 self
+Sendable
 serialize
 SerializerProvider
 set
