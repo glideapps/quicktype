@@ -76,6 +76,7 @@
       "debugger": { "debugger": 123 },
       "decimal": { "decimal": 123 },
       "declare": { "declare": 123 },
+      "DeserializationFeature": { "DeserializationFeature": 123 },
       "decltype": { "decltype": 123 },
       "decode_string": { "decode_string": 123 },
       "Decoder": { "Decoder": 123 },
@@ -130,10 +131,10 @@
       "function": { "function": 123 },
       "get": { "get": 123 },
       "global": { "global": 123 },
-      "go": { "go": 123 },
       "dummy": 123
     },
   "obj3": {
+      "go": { "go": 123 },
       "goto": { "goto": 123 },
       "guard": { "guard": 123 },
       "Hashable": { "Hashable": 123 },
@@ -197,10 +198,10 @@
       "new": { "new": 123 },
       "newtonsoft": { "newtonsoft": 123 },
       "nil": { "nil": 123 },
-      "NO": { "NO": 123 },
       "dummy": 123
     },
   "obj4": {
+      "NO": { "NO": 123 },
       "noexcept": { "noexcept": 123 },
       "nonatomic": { "nonatomic": 123 },
       "none": { "none": 123 },
@@ -219,6 +220,8 @@
       "number": { "number": 123 },
       "object": { "object": 123 },
       "ObjectMapper": { "ObjectMapper": 123 },
+      "ObjectReader": { "ObjectReader": 123 },
+      "ObjectWriter": { "ObjectWriter": 123 },
       "of": { "of": 123 },
       "oneway": { "oneway": 123 },
       "open": { "open": 123 },
@@ -262,18 +265,19 @@
       "right": { "right": 123 },
       "runtimeType": { "runtimeType": 123 },
       "s": { "s": 123 },
-      "sbyte": { "sbyte": 123 },
-      "sealed": { "sealed": 123 },
-      "SEL": { "SEL": 123 },
       "dummy": 123
     },
   "obj5": {
+      "sbyte": { "sbyte": 123 },
+      "sealed": { "sealed": 123 },
+      "SEL": { "SEL": 123 },
       "select": { "select": 123 },
       "Self": { "Self": 123 },
       "Serializable": { "Serializable": 123 },
       "self": { "self": 123 },
       "Sendable": { "Sendable": 123 },
       "serialize": { "serialize": 123 },
+      "SerializationFeature": { "SerializationFeature": 123 },
       "SerialName": { "SerialName": 123 },
       "KSerializer": { "KSerializer": 123 },
       "PrimitiveKind": { "PrimitiveKind": 123 },
@@ -328,13 +332,13 @@
       "ulong": { "ulong": 123 },
       "unchecked": { "unchecked": 123 },
       "undefined": { "undefined": 123 },
+      "dummy": 123
+    },
+  "obj6": {
       "union": { "union": 123 },
       "UseSerializers": { "UseSerializers": 123 },
       "unowned": { "unowned": 123 },
       "unsafe": { "unsafe": 123 },
-      "dummy": 123
-    },
-  "obj6": {
       "unsigned": { "unsigned": 123 },
       "ushort": { "ushort": 123 },
       "using": { "using": 123 },

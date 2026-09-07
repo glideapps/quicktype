@@ -71,6 +71,7 @@ DateTimeStyles
 debugger
 decimal
 declare
+DeserializationFeature
 decltype
 decode_string
 Decoder
@@ -208,6 +209,8 @@ nullptr
 number
 object
 ObjectMapper
+ObjectReader
+ObjectWriter
 of
 oneway
 open
@@ -260,6 +263,7 @@ Serializable
 self
 Sendable
 serialize
+SerializationFeature
 SerialName
 KSerializer
 PrimitiveKind

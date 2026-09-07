@@ -512,6 +512,13 @@
             ],
             "title": "union_declare"
         },
+        "DeserializationFeature": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "DeserializationFeature" }
+            ],
+            "title": "union_DeserializationFeature"
+        },
         "decltype": {
             "oneOf": [
                 { "type": "number" },
@@ -1471,6 +1478,20 @@
             ],
             "title": "union_ObjectMapper"
         },
+        "ObjectReader": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "ObjectReader" }
+            ],
+            "title": "union_ObjectReader"
+        },
+        "ObjectWriter": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "ObjectWriter" }
+            ],
+            "title": "union_ObjectWriter"
+        },
         "of": {
             "oneOf": [
                 { "type": "number" },
@@ -1834,6 +1855,13 @@
                 { "type": "object", "additionalProperties": false, "title": "serialize" }
             ],
             "title": "union_serialize"
+        },
+        "SerializationFeature": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "SerializationFeature" }
+            ],
+            "title": "union_SerializationFeature"
         },
         "SerialName": {
             "oneOf": [
