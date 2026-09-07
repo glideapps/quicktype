@@ -380,13 +380,26 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
     protected emitEnum(e: EnumType, enumName: Name): void {
         this.ensureBlankLine();
         this.emitDescription(this.descriptionForType(e));
-        this.emitLine("\nexport const ", enumName, "Schema = ", "z.enum([");
-        this.indent(() =>
-            this.forEachEnumCase(e, "none", (_, jsonName) => {
-                this.emitLine('"', stringEscape(jsonName), '",');
-            }),
-        );
-        this.emitLine("]);");
+
+        if (e.cases.size === 1) {
+            const value = e.cases.values().next().value;
+            if (value === undefined) panic("Single-value enum has no case.");
+            this.emitLine(
+                "\nexport const ",
+                enumName,
+                "Schema = z.literal(",
+                JSON.stringify(value),
+                ");",
+            );
+        } else {
+            this.emitLine("\nexport const ", enumName, "Schema = ", "z.enum([");
+            this.indent(() =>
+                this.forEachEnumCase(e, "none", (_, jsonName) => {
+                    this.emitLine('"', stringEscape(jsonName), '",');
+                }),
+            );
+            this.emitLine("]);");
+        }
         if (!this._options.justSchema) {
             this.emitLine(
                 "export type ",
