@@ -78,6 +78,13 @@
             ],
             "title": "union_Any"
         },
+        "ArrayNode": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "ArrayNode" }
+            ],
+            "title": "union_ArrayNode"
+        },
         "array": {
             "oneOf": [
                 { "type": "number" },
@@ -210,6 +217,13 @@
                 { "type": "object", "additionalProperties": false, "title": "boolean" }
             ],
             "title": "union_boolean"
+        },
+        "BooleanNode": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "BooleanNode" }
+            ],
+            "title": "union_BooleanNode"
         },
         "break": {
             "oneOf": [
@@ -512,6 +526,13 @@
             ],
             "title": "union_declare"
         },
+        "DeserializationFeature": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "DeserializationFeature" }
+            ],
+            "title": "union_DeserializationFeature"
+        },
         "decltype": {
             "oneOf": [
                 { "type": "number" },
@@ -623,6 +644,13 @@
                 { "type": "object", "additionalProperties": false, "title": "double" }
             ],
             "title": "union_double"
+        },
+        "DoubleNode": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "DoubleNode" }
+            ],
+            "title": "union_DoubleNode"
         },
         "dynamic": {
             "oneOf": [
@@ -1030,6 +1058,13 @@
             ],
             "title": "union_int"
         },
+        "IntNode": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "IntNode" }
+            ],
+            "title": "union_IntNode"
+        },
         "interface": {
             "oneOf": [
                 { "type": "number" },
@@ -1233,6 +1268,13 @@
             ],
             "title": "union_list"
         },
+        "LongNode": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "LongNode" }
+            ],
+            "title": "union_LongNode"
+        },
         "Locale": {
             "oneOf": [
                 { "type": "number" },
@@ -1330,6 +1372,13 @@
                 { "type": "object", "additionalProperties": false, "title": "nil" }
             ],
             "title": "union_nil"
+        },
+        "NullNode": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "NullNode" }
+            ],
+            "title": "union_NullNode"
         },
         "NO": {
             "oneOf": [
@@ -1456,6 +1505,13 @@
                 { "type": "object", "additionalProperties": false, "title": "object" }
             ],
             "title": "union_object"
+        },
+        "ObjectNode": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "ObjectNode" }
+            ],
+            "title": "union_ObjectNode"
         },
         "ObjectMapper": {
             "oneOf": [
@@ -1821,6 +1877,13 @@
             ],
             "title": "union_serialize"
         },
+        "SerializationFeature": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "SerializationFeature" }
+            ],
+            "title": "union_SerializationFeature"
+        },
         "SerializerProvider": {
             "oneOf": [
                 { "type": "number" },
@@ -1995,6 +2058,13 @@
                 { "type": "object", "additionalProperties": false, "title": "this" }
             ],
             "title": "union_this"
+        },
+        "TextNode": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "TextNode" }
+            ],
+            "title": "union_TextNode"
         },
         "thread_local": {
             "oneOf": [

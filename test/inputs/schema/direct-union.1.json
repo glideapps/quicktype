@@ -1,4 +1,12 @@
 {
+    "arrayNode": {},
+    "booleanNode": {},
+    "doubleNode": {},
+    "intNode": {},
+    "longNode": {},
+    "nullNode": {},
+    "objectNode": {},
+    "textNode": {},
     "stuff": {
         "one": {
             "required": null

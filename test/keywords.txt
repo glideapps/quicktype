@@ -9,6 +9,7 @@ and
 and_eq
 any
 Any
+ArrayNode
 array
 as
 asm
@@ -28,6 +29,7 @@ bitor
 BOOL
 bool
 boolean
+BooleanNode
 break
 bycopy
 byref
@@ -71,6 +73,7 @@ DateTimeStyles
 debugger
 decimal
 declare
+DeserializationFeature
 decltype
 decode_string
 Decoder
@@ -87,6 +90,7 @@ dictionary
 didSet
 do
 double
+DoubleNode
 dynamic
 dynamic_cast
 elif
@@ -145,6 +149,7 @@ inline
 inout
 instanceof
 int
+IntNode
 interface
 internal
 IsoDateTimeOffsetConverter
@@ -174,6 +179,7 @@ lazy
 left
 let
 list
+LongNode
 Locale
 lock
 long
@@ -188,6 +194,7 @@ native
 new
 newtonsoft
 nil
+NullNode
 NO
 noexcept
 nonatomic
@@ -206,6 +213,7 @@ null
 nullptr
 number
 object
+ObjectNode
 ObjectMapper
 of
 oneway
@@ -258,6 +266,7 @@ Self
 self
 Sendable
 serialize
+SerializationFeature
 SerializerProvider
 set
 short
@@ -283,6 +292,7 @@ system
 template
 then
 this
+TextNode
 thread_local
 throw
 throws
