@@ -344,7 +344,7 @@ export class ElmRenderer extends ConvenienceRenderer {
             (mapType) =>
                 multiWord(
                     " ",
-                    "Jenc.dict",
+                    "makeDictEncoder",
                     "identity",
                     parenIfNeeded(this.encoderNameForType(mapType.values)),
                 ),
@@ -800,6 +800,14 @@ import Dict exposing (Dict)`);
         this.ensureBlankLine();
 
         this.emitLine("--- encoder helpers");
+        this.ensureBlankLine();
+        this.emitMultiline(`makeDictEncoder : (String -> String) -> (a -> Jenc.Value) -> Dict String a -> Jenc.Value
+makeDictEncoder f m r =
+	r
+		|> Dict.toList
+		|> List.map (\\( x, y ) -> Jenc.encode 0 (Jenc.string (f x)) ++ ":" ++ Jenc.encode 0 (m y))
+		|> String.join ","
+		|> (\\str -> Jdec.decodeString Jdec.value ("{" ++ str ++ "}") |> Result.withDefault Jenc.null)`);
         this.ensureBlankLine();
         this.emitMultiline(`makeNullableEncoder : (a -> Jenc.Value) -> Maybe a -> Jenc.Value
 makeNullableEncoder f m =
