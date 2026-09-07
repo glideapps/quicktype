@@ -255,9 +255,14 @@ sealed
 SEL
 select
 Self
+Serializable
 self
 Sendable
 serialize
+SerialName
+KSerializer
+PrimitiveKind
+SerialDescriptor
 SerializerProvider
 set
 short
@@ -308,6 +313,7 @@ ulong
 unchecked
 undefined
 union
+UseSerializers
 unowned
 unsafe
 unsigned

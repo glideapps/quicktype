@@ -62,6 +62,12 @@ export class KotlinXRenderer extends KotlinRenderer {
             ...dateTimeSerializers.map((s) => s.name),
             "Decoder",
             "Encoder",
+            "KSerializer",
+            "PrimitiveKind",
+            "Serializable",
+            "SerialDescriptor",
+            "SerialName",
+            "UseSerializers",
         ];
     }
 

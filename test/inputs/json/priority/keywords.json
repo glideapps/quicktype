@@ -269,9 +269,14 @@
     },
   "obj5": {
       "Self": { "Self": 123 },
+      "Serializable": { "Serializable": 123 },
       "self": { "self": 123 },
       "Sendable": { "Sendable": 123 },
       "serialize": { "serialize": 123 },
+      "SerialName": { "SerialName": 123 },
+      "KSerializer": { "KSerializer": 123 },
+      "PrimitiveKind": { "PrimitiveKind": 123 },
+      "SerialDescriptor": { "SerialDescriptor": 123 },
       "SerializerProvider": { "SerializerProvider": 123 },
       "set": { "set": 123 },
       "short": { "short": 123 },
@@ -322,19 +327,20 @@
       "unchecked": { "unchecked": 123 },
       "undefined": { "undefined": 123 },
       "union": { "union": 123 },
+      "UseSerializers": { "UseSerializers": 123 },
       "unowned": { "unowned": 123 },
       "unsafe": { "unsafe": 123 },
       "unsigned": { "unsigned": 123 },
       "ushort": { "ushort": 123 },
+      "dummy": 123
+    },
+  "obj6": {
       "using": { "using": 123 },
       "Utf8JsonReader": { "Utf8JsonReader": 123 },
       "Utf8JsonWriter": { "Utf8JsonWriter": 123 },
       "UUID": { "UUID": 123 },
       "var": { "var": 123 },
       "virtual": { "virtual": 123 },
-      "dummy": 123
-    },
-  "obj6": {
       "void": { "void": 123 },
       "volatile": { "volatile": 123 },
       "wchar_t": { "wchar_t": 123 },
