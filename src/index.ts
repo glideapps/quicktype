@@ -126,6 +126,7 @@ function typeNameFromFilename(filename: string): string {
 
 async function samplesFromDirectory(
     dataDir: string,
+    srcLang: string,
     httpHeaders?: string[],
 ): Promise<TypeSource[]> {
     async function readFilesOrURLsInDirectory(
@@ -141,7 +142,10 @@ async function samplesFromDirectory(
         let graphQLSchema: Readable | undefined;
         let graphQLSchemaFileName: string | undefined;
         for (let file of files) {
-            const name = typeNameFromFilename(file);
+            const name =
+                path.extname(file) === ""
+                    ? path.basename(file)
+                    : typeNameFromFilename(file);
 
             let fileOrUrl = file;
             file = file.toLowerCase();
@@ -151,7 +155,7 @@ async function samplesFromDirectory(
                 fileOrUrl = fs.readFileSync(file, "utf8").trim();
             }
 
-            if (file.endsWith(".url") || file.endsWith(".json")) {
+            if (file.endsWith(".url")) {
                 sourcesInDir.push({
                     kind: "json",
                     name,
@@ -159,11 +163,23 @@ async function samplesFromDirectory(
                         await readableFromFileOrURL(fileOrUrl, httpHeaders),
                     ],
                 });
-            } else if (file.endsWith(".schema")) {
+            } else if (
+                file.endsWith(".schema") ||
+                (srcLang === "schema" &&
+                    (file.endsWith(".json") || path.extname(file) === ""))
+            ) {
                 sourcesInDir.push({
                     kind: "schema",
                     name,
                     uris: [fileOrUrl],
+                });
+            } else if (file.endsWith(".json")) {
+                sourcesInDir.push({
+                    kind: "json",
+                    name,
+                    samples: [
+                        await readableFromFileOrURL(fileOrUrl, httpHeaders),
+                    ],
                 });
             } else if (file.endsWith(".gqlschema")) {
                 messageAssert(
@@ -875,7 +891,11 @@ async function getSources(options: CLIOptions): Promise<TypeSource[]> {
 
     for (const dataDir of directories) {
         sources = sources.concat(
-            await samplesFromDirectory(dataDir, options.httpHeader),
+            await samplesFromDirectory(
+                dataDir,
+                options.srcLang,
+                options.httpHeader,
+            ),
         );
     }
 
