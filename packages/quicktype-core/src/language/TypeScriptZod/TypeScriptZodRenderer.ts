@@ -200,6 +200,12 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                 return ["z.union([", ...arrayIntercalate(", ", children), "])"];
             },
             (_transformedStringType) => {
+                if (_transformedStringType.kind === "date") {
+                    return "z.string().regex(/^\\d{4}-(?:0[1-9]|1[0-2])-(?:[0-2]\\d|3[01])$/).refine(value => new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value)";
+                }
+                if (_transformedStringType.kind === "time") {
+                    return "z.string().regex(/^(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d)$/)";
+                }
                 if (_transformedStringType.kind === "date-time") {
                     return "z.string().pipe(z.coerce.date())";
                 }

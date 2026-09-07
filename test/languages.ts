@@ -94,6 +94,8 @@ export const JSONSchemaLanguage: Language = {
         "no-defaults",
         "strict-optional",
         "date-time",
+        "date",
+        "time",
         "uuid",
         "integer",
         "minmax",
