@@ -445,10 +445,15 @@ ${hasArrayConstraints ? '        if ((typ.min !== undefined && val.length < typ.
         if (val === null) {
             return null;
         }
+        if (!(val instanceof Date) && (typeof val !== "string" || !/^[0-9]{4}-(?:0[1-9]|1[0-2])-(?:[0-2][0-9]|3[01])(?:T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:[.][0-9]+)?(?:Z|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9]))?$/i.test(val)))
+            return invalidValue(l("Date"), val, key, parent);
         const d = new Date(val);
         if (isNaN(d.valueOf())) {
             return invalidValue(l("Date"), val, key, parent);
         }
+        const date = typeof val === "string" ? val.slice(0, 10) : null;
+        if (date !== null && new Date(date + "T00:00:00Z").toISOString().slice(0, 10) !== date)
+            return invalidValue(l("Date"), val, key, parent);
         return d;
     }
 
