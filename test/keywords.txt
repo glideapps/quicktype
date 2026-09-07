@@ -179,6 +179,7 @@ Locale
 lock
 long
 map
+MarshalJSON
 MapEntry
 metadata_property_handling
 module
@@ -315,6 +316,7 @@ ulong
 unchecked
 undefined
 union
+UnmarshalJSON
 UseSerializers
 unowned
 unsafe
