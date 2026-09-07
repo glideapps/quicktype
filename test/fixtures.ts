@@ -91,24 +91,23 @@ function additionalTestFiles(
 
     let fn = `${base}.${extension}`;
     tryAdd(fn);
-    let i = 1;
-    let found: boolean;
-    do {
-        found = false;
-
+    const prefix = `${path.basename(base)}.`;
+    const numberedIndices = fs
+        .readdirSync(path.dirname(base))
+        .filter((file) => file.startsWith(prefix))
+        .map((file) => file.slice(prefix.length).match(/^(\d+)\./)?.[1])
+        .filter((index): index is string => index !== undefined)
+        .map(Number);
+    const maxIndex = Math.max(0, ...numberedIndices);
+    for (let i = 1; i <= maxIndex; i++) {
         fn = `${base}.${i.toString()}.${extension}`;
-        found = tryAdd(fn) || found;
+        tryAdd(fn);
 
         for (const feature of features) {
-            found =
-                tryAdd(
-                    `${base}.${i.toString()}.fail.${feature}.${extension}`,
-                ) || found;
+            tryAdd(`${base}.${i.toString()}.fail.${feature}.${extension}`);
         }
-        found = tryAdd(`${base}.${i.toString()}.fail.${extension}`) || found;
-
-        i++;
-    } while (found);
+        tryAdd(`${base}.${i.toString()}.fail.${extension}`);
+    }
     return additionalFiles;
 }
 
