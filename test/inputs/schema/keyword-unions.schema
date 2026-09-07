@@ -337,6 +337,27 @@
             ],
             "title": "union_co_yield"
         },
+        "Codable": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "Codable" }
+            ],
+            "title": "union_Codable"
+        },
+        "CodingKey": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "CodingKey" }
+            ],
+            "title": "union_CodingKey"
+        },
+        "CodingKeys": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "CodingKeys" }
+            ],
+            "title": "union_CodingKeys"
+        },
         "compl": {
             "oneOf": [
                 { "type": "number" },
@@ -511,6 +532,13 @@
                 { "type": "object", "additionalProperties": false, "title": "Decoder" }
             ],
             "title": "union_Decoder"
+        },
+        "DecodingError": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "DecodingError" }
+            ],
+            "title": "union_DecodingError"
         },
         "def": {
             "oneOf": [
