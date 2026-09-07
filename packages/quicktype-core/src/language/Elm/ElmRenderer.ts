@@ -259,7 +259,7 @@ export class ElmRenderer extends ConvenienceRenderer {
         const [min, max] = minMaxLengthForType(t) ?? [];
         if (min === undefined && max === undefined)
             return singleWord("Jdec.string");
-        const length = "String.length x";
+        const length = "List.length (String.toList x)";
         const minCheck = min === undefined ? "True" : `${length} >= ${min}`;
         const maxCheck = max === undefined ? "True" : `${length} <= ${max}`;
         return singleWord(

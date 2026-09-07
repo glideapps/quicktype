@@ -827,6 +827,9 @@ export const ElmLanguage: Language = {
         "list.json", // recursion
     ],
     skipMiscJSON: false,
+    additionalSchemaFiles: [
+        "test/inputs/regressions/unicode-codepoint-length.schema",
+    ],
     skipSchema: [
         "union-list.schema", // recursion
         "list.schema", // recursion
