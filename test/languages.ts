@@ -1743,6 +1743,8 @@ export const TypeScriptZodLanguage: Language = {
         "union",
         "no-defaults",
         "date-time",
+        "date",
+        "time",
         "uuid",
         "bool-string",
         "integer-string",
