@@ -871,6 +871,7 @@ export const SwiftLanguage: Language = {
     rendererOptions: { "support-linux": "true" },
     quickTestRendererOptions: [
         { "support-linux": "false" },
+        { initializers: "false" },
         { "struct-or-class": "class" },
         { sendable: "true" },
         { sendable: "true", "struct-or-class": "class" },

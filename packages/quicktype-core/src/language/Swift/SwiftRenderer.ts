@@ -1160,11 +1160,7 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
             );
         }
 
-        if (
-            (!this._options.justTypes &&
-                this._options.convenienceInitializers) ||
-            this._options.alamofire
-        ) {
+        if (!this._options.justTypes || this._options.alamofire) {
             this.ensureBlankLine();
             this.emitMark(
                 "Helper functions for creating encoders and decoders",
