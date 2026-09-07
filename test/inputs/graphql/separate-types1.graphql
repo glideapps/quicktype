@@ -1,0 +1,14 @@
+query GridQuery {
+  grid {
+    config {
+      items {
+        id
+      }
+    }
+    props {
+      items {
+        id
+      }
+    }
+  }
+}
