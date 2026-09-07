@@ -136,9 +136,10 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
             (mapType) =>
                 singleWord([
                     "{ ",
-                    this._tsFlowOptions.readonly &&
-                    this.targetLanguage.name === "typescript"
-                        ? "readonly "
+                    this._tsFlowOptions.readonly
+                        ? this.targetLanguage.name === "flow"
+                            ? "+"
+                            : "readonly "
                         : "",
                     "[key: string]: ",
                     this.sourceFor(mapType.values).source,
@@ -189,7 +190,8 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
 
             if (this._tsFlowOptions.readonly) {
                 propertyName = modifySource(
-                    (_propertyName) => `readonly ${_propertyName}`,
+                    (_propertyName) =>
+                        `${this.targetLanguage.name === "flow" ? "+" : "readonly "}${_propertyName}`,
                     propertyName,
                 );
             }
@@ -233,9 +235,8 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
 
             this.emitTable([
                 [
-                    this._tsFlowOptions.readonly &&
-                    this.targetLanguage.name === "typescript"
-                        ? "readonly [property: string]"
+                    this._tsFlowOptions.readonly
+                        ? `${this.targetLanguage.name === "flow" ? "+" : "readonly "}[property: string]`
                         : "[property: string]",
                     ": ",
                     multiWord(" | ", ...indexTypes).source,

@@ -1121,6 +1121,9 @@ export const FlowLanguage: Language = {
         // Flow output.
         { "prefer-unions": "false" },
         { "prefer-unknown": "false" },
+        ["simple-object.json", { readonly: "true" }],
+        ["number-map.json", { readonly: "true" }],
+        ["class-with-additional.schema", { readonly: "true" }],
     ],
     sourceFiles: ["src/language/Flow/index.ts"],
 };
