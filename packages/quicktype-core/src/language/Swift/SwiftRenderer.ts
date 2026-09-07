@@ -743,6 +743,15 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     private emitNewEncoderDecoder(): void {
+        this.emitMultiline(`private func isValidDate(_ value: String) -> Bool {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.timeZone = TimeZone(secondsFromGMT: 0)
+    formatter.dateFormat = "u-MM-dd"
+    formatter.isLenient = false
+    return formatter.date(from: String(value.prefix(10))) != nil
+}`);
+        this.ensureBlankLine();
         this.emitBlock("func newJSONDecoder() -> JSONDecoder", () => {
             this.emitLine("let decoder = JSONDecoder()");
             if (!this._options.linux) {
@@ -751,6 +760,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     () => {
                         this.emitMultiline(`decoder.dateDecodingStrategy = .custom { decoder in
     let dateStr = try decoder.singleValueContainer().decode(String.self).uppercased()
+    guard isValidDate(dateStr) else {
+        throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "Invalid date"))
+    }
     let dateData = try JSONEncoder().encode(dateStr)
     let dateDecoder = JSONDecoder()
     dateDecoder.dateDecodingStrategy = .iso8601
@@ -762,6 +774,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 this.emitMultiline(`decoder.dateDecodingStrategy = .custom({ (decoder) -> Date in
 	let container = try decoder.singleValueContainer()
 	let dateStr = try container.decode(String.self).uppercased()
+	guard isValidDate(dateStr) else {
+		throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "Invalid date"))
+	}
 
 	let formatter = DateFormatter()
 	formatter.calendar = Calendar(identifier: .iso8601)
