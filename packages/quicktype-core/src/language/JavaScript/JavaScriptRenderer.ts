@@ -456,7 +456,7 @@ ${hasArrayConstraints ? '        if ((typ.min !== undefined && val.length < typ.
         if (val === null || typeof val !== "object" || Array.isArray(val)) {
             return invalidValue(l(ref || "object"), val, key, parent);
         }
-        const result${anyAnnotation} = {};
+        const result${anyAnnotation} = Object.create(null);
         Object.getOwnPropertyNames(props).forEach(key => {
             const prop = props[key];
             const v = Object.prototype.hasOwnProperty.call(val, key) ? val[key] : undefined;
@@ -471,7 +471,7 @@ ${hasArrayConstraints ? '        if ((typ.min !== undefined && val.length < typ.
                 };
             }
         });
-        return result;
+        return Object.setPrototypeOf(result, Object.prototype);
     }
 
     if (typ === "any") return val;
