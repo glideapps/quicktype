@@ -16,6 +16,11 @@ import { TypeScriptZodRenderer } from "./TypeScriptZodRenderer.js";
 
 export const typeScriptZodOptions = {
     justSchema: new BooleanOption("just-schema", "Schema only", false),
+    preferUnknown: new BooleanOption(
+        "prefer-unknown",
+        "Use unknown instead of any",
+        false,
+    ),
 };
 
 export const typeScriptZodLanguageConfig = {
