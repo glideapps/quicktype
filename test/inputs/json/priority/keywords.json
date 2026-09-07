@@ -188,6 +188,7 @@
       "left": { "left": 123 },
       "let": { "let": 123 },
       "list": { "list": 123 },
+      "LocalDate": { "LocalDate": 123 },
       "LongNode": { "LongNode": 123 },
       "Locale": { "Locale": 123 },
       "lock": { "lock": 123 },
@@ -197,11 +198,11 @@
       "MapEntry": { "MapEntry": 123 },
       "metadata_property_handling": { "metadata_property_handling": 123 },
       "module": { "module": 123 },
-      "mutable": { "mutable": 123 },
-      "mutating": { "mutating": 123 },
       "dummy": 123
     },
   "obj4": {
+      "mutable": { "mutable": 123 },
+      "mutating": { "mutating": 123 },
       "namespace": { "namespace": 123 },
       "native": { "native": 123 },
       "new": { "new": 123 },
@@ -226,6 +227,8 @@
       "nullptr": { "nullptr": 123 },
       "number": { "number": 123 },
       "object": { "object": 123 },
+      "OffsetDateTime": { "OffsetDateTime": 123 },
+      "OffsetTime": { "OffsetTime": 123 },
       "ObjectNode": { "ObjectNode": 123 },
       "ObjectMapper": { "ObjectMapper": 123 },
       "ObjectReader": { "ObjectReader": 123 },
@@ -262,13 +265,13 @@
       "RegExp": { "RegExp": "550e8400-e29b-41d4-a716-446655440000" },
       "register": { "register": 123 },
       "reinterpret_cast": { "reinterpret_cast": 123 },
+      "dummy": 123
+    },
+  "obj5": {
       "repeat": { "repeat": 123 },
       "require": { "require": 123 },
       "required": { "required": 123 },
       "requires": { "requires": 123 },
-      "dummy": 123
-    },
-  "obj5": {
       "restrict": { "restrict": 123 },
       "retain": { "retain": 123 },
       "rethrows": { "rethrows": 123 },
@@ -329,13 +332,13 @@
       "transient": { "transient": 123 },
       "True": { "True": 123 },
       "true": { "true": 123 },
+      "dummy": 123
+    },
+  "obj6": {
       "try": { "try": 123 },
       "Type": { "Type": 123 },
       "type": { "type": 123 },
       "typealias": { "typealias": 123 },
-      "dummy": 123
-    },
-  "obj6": {
       "typedef": { "typedef": 123 },
       "typeid": { "typeid": 123 },
       "typename": { "typename": 123 },
