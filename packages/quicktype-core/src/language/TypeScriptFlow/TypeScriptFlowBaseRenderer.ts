@@ -135,7 +135,12 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
             (_classType) => panic("We handled this above"),
             (mapType) =>
                 singleWord([
-                    "{ [key: string]: ",
+                    "{ ",
+                    this._tsFlowOptions.readonly &&
+                    this.targetLanguage.name === "typescript"
+                        ? "readonly "
+                        : "",
+                    "[key: string]: ",
                     this.sourceFor(mapType.values).source,
                     " }",
                 ]),
@@ -228,7 +233,10 @@ export abstract class TypeScriptFlowBaseRenderer extends JavaScriptRenderer {
 
             this.emitTable([
                 [
-                    "[property: string]",
+                    this._tsFlowOptions.readonly &&
+                    this.targetLanguage.name === "typescript"
+                        ? "readonly [property: string]"
+                        : "[property: string]",
                     ": ",
                     multiWord(" | ", ...indexTypes).source,
                     ";",
