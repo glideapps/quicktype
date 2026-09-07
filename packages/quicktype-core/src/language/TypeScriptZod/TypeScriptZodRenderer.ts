@@ -200,8 +200,14 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
                 return ["z.union([", ...arrayIntercalate(", ", children), "])"];
             },
             (_transformedStringType) => {
+                if (_transformedStringType.kind === "date") {
+                    return 'z.string().regex(/^\\d{4}-(?:0[1-9]|1[0-2])-(?:[0-2]\\d|3[01])$/).refine(value => (new Date(value + "T00:00:00Z").toJSON() || "").slice(0, 10) === value)';
+                }
+                if (_transformedStringType.kind === "time") {
+                    return "z.string().regex(/^(?:[01]\\d|2[0-3]):[0-5]\\d:(?:[0-5]\\d|60)(?:\\.\\d+)?(?:Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d)$/i)";
+                }
                 if (_transformedStringType.kind === "date-time") {
-                    return "z.string().pipe(z.coerce.date())";
+                    return 'z.string().refine(value => z.string().datetime({ offset: true }).safeParse(value.toUpperCase()).success && (new Date(value.slice(0, 10) + "T00:00:00Z").toJSON() || "").slice(0, 10) === value.slice(0, 10)).pipe(z.coerce.date())';
                 }
                 if (_transformedStringType.kind === "uuid") {
                     return "z.string().uuid()";
