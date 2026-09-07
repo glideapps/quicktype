@@ -515,7 +515,7 @@ export class JSONPythonRenderer extends PythonRenderer {
                 this.emitLine(
                     "assert isinstance(x, str) and ",
                     this.withModuleImport("re"),
-                    '.match(r"^\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})?$", x)',
+                    '.match(r"^\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:[Zz]|[+-]\\d{2}:\\d{2})?$", x)',
                 );
                 this.emitLine("return dateutil.parser.parse(x).timetz()");
             },
@@ -536,7 +536,7 @@ export class JSONPythonRenderer extends PythonRenderer {
             ],
             () => {
                 this._haveDateutil = true;
-                this.emitLine("return dateutil.parser.parse(x)");
+                this.emitLine("return dateutil.parser.isoparse(x)");
             },
         );
     }
