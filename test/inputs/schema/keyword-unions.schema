@@ -1821,6 +1821,41 @@
             ],
             "title": "union_serialize"
         },
+        "Serializable": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "Serializable" }
+            ],
+            "title": "union_Serializable"
+        },
+        "SerialName": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "SerialName" }
+            ],
+            "title": "union_SerialName"
+        },
+        "KSerializer": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "KSerializer" }
+            ],
+            "title": "union_KSerializer"
+        },
+        "PrimitiveKind": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "PrimitiveKind" }
+            ],
+            "title": "union_PrimitiveKind"
+        },
+        "SerialDescriptor": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "SerialDescriptor" }
+            ],
+            "title": "union_SerialDescriptor"
+        },
         "SerializerProvider": {
             "oneOf": [
                 { "type": "number" },
@@ -2170,6 +2205,13 @@
                 { "type": "object", "additionalProperties": false, "title": "union" }
             ],
             "title": "union_union"
+        },
+        "UseSerializers": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "UseSerializers" }
+            ],
+            "title": "union_UseSerializers"
         },
         "unowned": {
             "oneOf": [

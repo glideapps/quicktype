@@ -258,6 +258,11 @@ Self
 self
 Sendable
 serialize
+Serializable
+SerialName
+KSerializer
+PrimitiveKind
+SerialDescriptor
 SerializerProvider
 set
 short
@@ -308,6 +313,7 @@ ulong
 unchecked
 undefined
 union
+UseSerializers
 unowned
 unsafe
 unsigned
