@@ -57,11 +57,12 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     protected forbiddenNamesForGlobalNamespace(): readonly string[] {
-        if (this._options.alamofire) {
-            return ["DataRequest", ...keywords] as const;
-        }
-
-        return keywords;
+        const names: string[] = [...keywords];
+        if (this._options.alamofire) names.push("DataRequest");
+        if (this._options.protocol.equatable) names.push("Equatable");
+        if (this._options.sendable) names.push("Sendable");
+        if (this._options.objcSupport) names.push("NSObject");
+        return names;
     }
 
     protected forbiddenForObjectProperties(
