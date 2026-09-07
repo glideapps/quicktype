@@ -870,6 +870,8 @@ export const SwiftLanguage: Language = {
     skipSchema: ["optional-property.schema"],
     rendererOptions: { "support-linux": "true" },
     quickTestRendererOptions: [
+        { "mutable-properties": "true" },
+        { "coding-keys-protocol": "CaseIterable" },
         { "support-linux": "false" },
         { "struct-or-class": "class" },
         { sendable: "true" },
@@ -982,6 +984,7 @@ export const TypeScriptLanguage: Language = {
     skipSchema: [],
     rendererOptions: { "explicit-unions": "yes" },
     quickTestRendererOptions: [
+        { "raw-type": "any" },
         { "runtime-typecheck": "false" },
         { "runtime-typecheck-ignore-unknown-properties": "true" },
         { "nice-property-names": "true" },
@@ -1030,6 +1033,7 @@ export const JavaScriptLanguage: Language = {
     skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [
+        { "raw-type": "any" },
         { "runtime-typecheck": "false" },
         { "runtime-typecheck-ignore-unknown-properties": "true" },
         { converters: "top-level" },

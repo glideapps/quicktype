@@ -30,7 +30,6 @@ import {
     InputData,
     JSONSchemaInput,
     type LanguageName,
-    type Option,
     type RendererOptions,
     quicktype as quicktypeCore,
     quicktypeMultiFile,
@@ -119,11 +118,12 @@ function runEnvForLanguage(
     const newEnv = { ...process.env };
 
     for (const option of Object.keys(additionalRendererOptions)) {
-        newEnv[`QUICKTYPE_${option.toUpperCase().replace("-", "_")}`] = (
-            additionalRendererOptions[
-                option as keyof typeof additionalRendererOptions
-            ] as Option<string, unknown>
-        ).name;
+        newEnv[`QUICKTYPE_${option.toUpperCase().replaceAll("-", "_")}`] =
+            String(
+                additionalRendererOptions[
+                    option as keyof typeof additionalRendererOptions
+                ],
+            );
     }
     return newEnv;
 }
