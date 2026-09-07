@@ -1,0 +1,22 @@
+query ComprehensiveVariablesTest(
+  $order: RepositoryOrder!,
+  $query: String!,
+  $first: Int,
+  $type: SearchType!,
+  $id: ID,
+  $includeExtra: Boolean
+) {
+  viewer {
+    repositories(first: 10, orderBy: $order) {
+      nodes {
+        name
+      }
+    }
+  }
+  search(query: $query, first: $first, type: $type) {
+    repositoryCount
+  }
+  node(id: $id) {
+    id
+  }
+}
