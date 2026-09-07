@@ -919,12 +919,10 @@ export class DartRenderer extends ConvenienceRenderer {
                                     this._options.requiredProperties ||
                                     !prop.type.isNullable ||
                                     !prop.isOptional;
-                                if (this._options.useJsonAnnotation) {
-                                    this.classPropertyCounter++;
-                                    this.emitLine(
-                                        `@JsonKey(name: "${jsonName}")`,
-                                    );
-                                }
+                                this.classPropertyCounter++;
+                                this.emitLine(
+                                    `@JsonKey(name: "${stringEscape(jsonName)}")`,
+                                );
 
                                 this.emitLine(
                                     required ? "required " : "",
