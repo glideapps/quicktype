@@ -209,7 +209,7 @@ export class JavaScriptPropTypesRenderer extends ConvenienceRenderer {
                     return '(props, name) => props[name] == null || /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(props[name]) ? null : new Error("Expected UUID")';
                 }
                 if (transformedStringType.kind === "date-time") {
-                    return '(props, name) => props[name] == null || typeof props[name] === "string" && !Number.isNaN(Date.parse(props[name])) ? null : new Error("Expected date-time")';
+                    return '(props, name) => props[name] == null || typeof props[name] === "string" && /^(\\d{4}-(?:0[1-9]|1[0-2])-(?:[0-2]\\d|3[01]))(?:T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d))?$/i.test(props[name]) && !Number.isNaN(Date.parse(`${props[name].slice(0, 10)}T00:00:00Z`)) && new Date(Date.parse(`${props[name].slice(0, 10)}T00:00:00Z`)).toISOString().slice(0, 10) === props[name].slice(0, 10) ? null : new Error("Expected date-time")';
                 }
                 return "PropTypes.string";
             },
