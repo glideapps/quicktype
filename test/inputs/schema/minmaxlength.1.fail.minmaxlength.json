@@ -2,6 +2,7 @@
   "minlength": "aa",
   "maxlength": "bbb",
   "minmaxlength": "cccc",
+  "emptyOnly": "",
   "union": "dddddd",
   "inUnion": "cccc",
   "minMaxUnion": "eeeee",

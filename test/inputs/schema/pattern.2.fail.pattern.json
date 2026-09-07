@@ -1,6 +1,6 @@
 {
-  "pattern1": "qqq",
+  "pattern1": "aa",
   "pattern2": "ba",
   "escaped": "123.abc",
-  "union": "ccc"
+  "union": "qqq"
 }

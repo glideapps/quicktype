@@ -6,6 +6,6 @@
   "union": "dddddd",
   "inUnion": "cccc",
   "minMaxUnion": "eeeee",
-  "intersection": "ffff",
+  "intersection": "fff",
   "minMaxIntersection": "gggg"
 }

@@ -3,7 +3,7 @@
   "maxlength": "bbb",
   "minmaxlength": "cccc",
   "emptyOnly": "",
-  "union": "dddddd",
+  "union": "dd",
   "inUnion": "cccc",
   "minMaxUnion": "eeeee",
   "intersection": "ffff",
