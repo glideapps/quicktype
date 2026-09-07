@@ -879,6 +879,7 @@ export const SwiftLanguage: Language = {
         { "coding-keys-protocol": "CaseIterable" },
         ["simple-object.json", { "coding-keys-protocol": "CaseIterable" }],
         { "support-linux": "false" },
+        ["date-time.schema", { "support-linux": "false" }],
         { "coding-keys": "false" },
         { "struct-or-class": "class" },
         { sendable: "true" },
