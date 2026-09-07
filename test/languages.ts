@@ -1000,6 +1000,8 @@ export const TypeScriptLanguage: Language = {
         { "acronym-style": "pascal" },
         { converters: "all-objects" },
         { readonly: "true" },
+        ["number-map.json", { readonly: "true" }],
+        ["class-with-additional.schema", { readonly: "true" }],
         // The default is prefer-unions=true; this keeps the TypeScript
         // enum code path covered.
         { "prefer-unions": "false" },
@@ -1120,6 +1122,9 @@ export const FlowLanguage: Language = {
         // Flow output.
         { "prefer-unions": "false" },
         { "prefer-unknown": "false" },
+        ["simple-object.json", { readonly: "true" }],
+        ["number-map.json", { readonly: "true" }],
+        ["class-with-additional.schema", { readonly: "true" }],
     ],
     sourceFiles: ["src/language/Flow/index.ts"],
 };
