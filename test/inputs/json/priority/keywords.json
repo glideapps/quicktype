@@ -269,10 +269,10 @@
     },
   "obj5": {
       "Self": { "Self": 123 },
+      "Serializable": { "Serializable": 123 },
       "self": { "self": 123 },
       "Sendable": { "Sendable": 123 },
       "serialize": { "serialize": 123 },
-      "Serializable": { "Serializable": 123 },
       "SerialName": { "SerialName": 123 },
       "KSerializer": { "KSerializer": 123 },
       "PrimitiveKind": { "PrimitiveKind": 123 },

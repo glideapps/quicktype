@@ -141,6 +141,7 @@ export const phpForbiddenClassNames: readonly string[] = [
     "Require",
     "Return",
     "Self",
+    "Serializable",
     "Static",
     "StdClass",
     "String",

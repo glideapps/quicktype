@@ -255,10 +255,10 @@ sealed
 SEL
 select
 Self
+Serializable
 self
 Sendable
 serialize
-Serializable
 SerialName
 KSerializer
 PrimitiveKind

@@ -1800,6 +1800,13 @@
             ],
             "title": "union_Self"
         },
+        "Serializable": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "Serializable" }
+            ],
+            "title": "union_Serializable"
+        },
         "self": {
             "oneOf": [
                 { "type": "number" },
@@ -1820,13 +1827,6 @@
                 { "type": "object", "additionalProperties": false, "title": "serialize" }
             ],
             "title": "union_serialize"
-        },
-        "Serializable": {
-            "oneOf": [
-                { "type": "number" },
-                { "type": "object", "additionalProperties": false, "title": "Serializable" }
-            ],
-            "title": "union_Serializable"
         },
         "SerialName": {
             "oneOf": [
