@@ -80,6 +80,11 @@ export const pythonOptions = {
         "Transform property names to be Pythonic",
         true,
     ),
+    keepPropertyNames: new BooleanOption(
+        "keep-property-names",
+        "Keep original property names when they are valid Python identifiers",
+        false,
+    ),
     pydanticBaseModel: new BooleanOption(
         "pydantic-base-model",
         "Uses pydantic BaseModel",

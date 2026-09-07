@@ -44,6 +44,32 @@ function isPartCharacter3(utf16Unit: number): boolean {
     return true;
 }
 
+function isPythonIdentifierStart(utf16Unit: number): boolean {
+    return utf16Unit === 0x5f || isNormalizedStartCharacter3(utf16Unit);
+}
+
+function isPythonIdentifierPart(utf16Unit: number): boolean {
+    return (
+        isPythonIdentifierStart(utf16Unit) ||
+        isNormalizedPartCharacter3(utf16Unit)
+    );
+}
+
+export function isLegalPythonIdentifier(original: string): boolean {
+    if (
+        original.length === 0 ||
+        !isPythonIdentifierStart(original.charCodeAt(0))
+    ) {
+        return false;
+    }
+
+    for (let i = 1; i < original.length; i++) {
+        if (!isPythonIdentifierPart(original.charCodeAt(i))) return false;
+    }
+
+    return true;
+}
+
 const legalizeName3 = utf16LegalizeCharacters(isPartCharacter3);
 
 export function classNameStyle(original: string): string {
