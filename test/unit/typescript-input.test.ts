@@ -225,6 +225,43 @@ describe("schemaForTypeScriptSources", () => {
         });
     });
 
+    // https://github.com/glideapps/quicktype/issues/1953
+    test("integer typed-array properties become integer arrays", () => {
+        const integerTypedArrays = [
+            "Int8Array",
+            "Uint8Array",
+            "Uint8ClampedArray",
+            "Int16Array",
+            "Uint16Array",
+            "Int32Array",
+            "Uint32Array",
+            "BigInt64Array",
+            "BigUint64Array",
+        ];
+        const { schema } = schemaForSource(`
+            export interface TypedArrays {
+                ${integerTypedArrays.map((type) => `${type}: ${type};`).join("\n")}
+                Float32Array: Float32Array;
+                Float64Array: Float64Array;
+            }
+        `);
+
+        const properties = schema.definitions.TypedArrays.properties;
+        for (const type of integerTypedArrays) {
+            expect(properties[type]).toMatchObject({
+                type: "array",
+                items: { type: "integer" },
+            });
+        }
+
+        for (const type of ["Float32Array", "Float64Array"]) {
+            expect(properties[type]).toMatchObject({
+                type: "array",
+                items: { type: "number" },
+            });
+        }
+    });
+
     // https://github.com/glideapps/quicktype/issues/1858
     test("Map properties become map schemas", () => {
         const { schema } = schemaForSource(`
