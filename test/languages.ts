@@ -1535,6 +1535,7 @@ export const DartLanguage: Language = {
         { "copy-with": "true" },
         ["copy-with-property.json", { "copy-with": "true" }],
         ["simple-object.json", { "required-props": "true" }],
+        ["identifiers.json", { "use-freezed": "true" }],
     ],
     sourceFiles: ["src/language/Dart/index.ts"],
 };
