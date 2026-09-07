@@ -52,19 +52,16 @@ export function callAndExpectFailure<T>(message: string, f: () => T): void {
 }
 
 export function exec(
-    s: string,
-    env: NodeJS.ProcessEnv | undefined,
+    str: string,
+    env: NodeJS.ProcessEnv = process.env,
     printFailure = true,
 ): { stdout: string; code: number } {
-    debug(s);
-    if (env === undefined) {
-        env = process.env;
-    }
-    const result = shell.exec(s, { silent: !DEBUG, env });
+    debug(str);
+    const result = shell.exec(str, { silent: !DEBUG, env });
 
     if (result.code !== 0) {
         const failureObj = {
-            command: s,
+            command: str,
             code: result.code,
         };
         if (!printFailure) {
