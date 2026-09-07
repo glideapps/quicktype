@@ -848,6 +848,13 @@
             ],
             "title": "union_from"
         },
+        "from_dict": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "from_dict" }
+            ],
+            "title": "union_from_dict"
+        },
         "from_json": {
             "oneOf": [
                 { "type": "number" },
@@ -2093,6 +2100,13 @@
                 { "type": "object", "additionalProperties": false, "title": "toString" }
             ],
             "title": "union_toString"
+        },
+        "to_dict": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "to_dict" }
+            ],
+            "title": "union_to_dict"
         },
         "transient": {
             "oneOf": [
