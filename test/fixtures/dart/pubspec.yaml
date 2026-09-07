@@ -1,0 +1,11 @@
+name: quicktype_fixture
+environment:
+  sdk: ">=2.14.0 <4.0.0"
+dependencies:
+  freezed_annotation: 0.14.3
+dev_dependencies:
+  analyzer: 2.7.0
+  build_runner: 2.1.7
+  freezed: 0.14.5
+  json_serializable: 6.1.4
+  meta: 1.7.0

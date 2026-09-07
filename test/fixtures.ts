@@ -254,6 +254,17 @@ abstract class LanguageFixture extends Fixture {
         additionalFiles: string[],
     ): Promise<number>;
 
+    compileCommand(additionalRendererOptions: RendererOptions) {
+        const options = {
+            ...this.language.rendererOptions,
+            ...additionalRendererOptions,
+        };
+        return (
+            this.language.compileCommandForOptions?.(options) ??
+            this.language.compileCommand
+        );
+    }
+
     additionalFiles(_sample: Sample): string[] {
         return [];
     }
@@ -382,8 +393,9 @@ class JSONFixture extends LanguageFixture {
         additionalRendererOptions: RendererOptions,
         _additionalFiles: string[],
     ): Promise<number> {
-        if (this.language.compileCommand) {
-            await execAsync(this.language.compileCommand);
+        const compileCommand = this.compileCommand(additionalRendererOptions);
+        if (compileCommand) {
+            await execAsync(compileCommand);
         }
         if (this.language.runCommand === undefined) {
             return 0;
@@ -454,8 +466,8 @@ class JSONFixture extends LanguageFixture {
                 );
             }
             if (this.language.roundtripViaSchema) {
-                if (this.language.compileCommand) {
-                    await execAsync(this.language.compileCommand);
+                if (compileCommand) {
+                    await execAsync(compileCommand);
                 }
                 compareJsonFileToJson({
                     ...comparisonArgs(
@@ -897,8 +909,9 @@ class JSONSchemaFixture extends LanguageFixture {
         additionalRendererOptions: RendererOptions,
         additionalFiles: string[],
     ): Promise<number> {
-        if (this.language.compileCommand) {
-            await execAsync(this.language.compileCommand);
+        const compileCommand = this.compileCommand(additionalRendererOptions);
+        if (compileCommand) {
+            await execAsync(compileCommand);
         }
         if (this.language.runCommand === undefined) return 0;
 

@@ -58,6 +58,7 @@ export interface Language {
     base: string;
     setupCommand?: string;
     compileCommand?: string;
+    compileCommandForOptions?: (options: RendererOptions) => string | undefined;
     runCommand?: (sample: string) => string;
     copyInput?: boolean;
     diffViaSchema: boolean;
@@ -1470,6 +1471,11 @@ export const KotlinXLanguage: Language = {
 export const DartLanguage: Language = {
     name: "dart",
     base: "test/fixtures/dart",
+    compileCommandForOptions(options) {
+        return options["use-freezed"] === "true"
+            ? "dart pub get && mkdir -p lib && cp TopLevel.dart lib/top_level.dart && sed -i.bak s/TopLevel.dart/top_level.dart/ parser.dart && dart pub run build_runner build --delete-conflicting-outputs && cp lib/top_level*.dart ."
+            : undefined;
+    },
     runCommand(sample: string) {
         return `dart --enable-experiment=non-nullable parser.dart "${sample}"`;
     },
