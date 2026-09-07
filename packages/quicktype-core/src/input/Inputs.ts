@@ -33,6 +33,7 @@ export interface Input<T> {
         inferMaps: boolean,
         inferEnums: boolean,
         fixedTopLevels: boolean,
+        combineClasses: boolean,
     ) => Promise<void>;
 
     addTypesSync: (
@@ -41,6 +42,7 @@ export interface Input<T> {
         inferMaps: boolean,
         inferEnums: boolean,
         fixedTopLevels: boolean,
+        combineClasses: boolean,
     ) => void;
     readonly kind: string;
 
@@ -161,6 +163,7 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
         inferMaps: boolean,
         inferEnums: boolean,
         fixedTopLevels: boolean,
+        combineClasses: boolean,
     ): Promise<void> {
         this.addTypesSync(
             ctx,
@@ -168,6 +171,7 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
             inferMaps,
             inferEnums,
             fixedTopLevels,
+            combineClasses,
         );
     }
 
@@ -177,12 +181,14 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
         inferMaps: boolean,
         inferEnums: boolean,
         fixedTopLevels: boolean,
+        combineClasses: boolean,
     ): void {
         const inference = new TypeInference(
             this._compressedJSON,
             typeBuilder,
             inferMaps,
             inferEnums,
+            combineClasses,
         );
 
         for (const [name, { samples, description }] of this._topLevels) {
@@ -269,6 +275,7 @@ export class InputData {
         inferMaps: boolean,
         inferEnums: boolean,
         fixedTopLevels: boolean,
+        combineClasses: boolean,
     ): Promise<void> {
         for (const input of this._inputs) {
             await input.addTypes(
@@ -277,6 +284,7 @@ export class InputData {
                 inferMaps,
                 inferEnums,
                 fixedTopLevels,
+                combineClasses,
             );
         }
     }
@@ -287,6 +295,7 @@ export class InputData {
         inferMaps: boolean,
         inferEnums: boolean,
         fixedTopLevels: boolean,
+        combineClasses: boolean,
     ): void {
         for (const input of this._inputs) {
             input.addTypesSync(
@@ -295,6 +304,7 @@ export class InputData {
                 inferMaps,
                 inferEnums,
                 fixedTopLevels,
+                combineClasses,
             );
         }
     }

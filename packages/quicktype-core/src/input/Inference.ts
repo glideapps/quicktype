@@ -3,6 +3,7 @@ import {
     inferTransformedStringTypeKindForString,
 } from "../attributes/StringTypes.js";
 import {
+    TypeAttributeKind,
     type TypeAttributes,
     emptyTypeAttributes,
 } from "../attributes/TypeAttributes.js";
@@ -110,6 +111,27 @@ function canBeEnumCase(_s: string): boolean {
     return true;
 }
 
+class UniqueInferenceClassTypeAttributeKind extends TypeAttributeKind<true> {
+    public constructor() {
+        super("uniqueInferenceClass");
+    }
+
+    public combine(_attrs: true[]): true {
+        return true;
+    }
+
+    public makeInferred(_attr: true): true {
+        return true;
+    }
+
+    public requiresUniqueIdentity(_attr: true): boolean {
+        return true;
+    }
+}
+
+const uniqueInferenceClassTypeAttributeKind =
+    new UniqueInferenceClassTypeAttributeKind();
+
 export type Accumulator = UnionAccumulator<NestedValueArray, NestedValueArray>;
 
 export class TypeInference {
@@ -120,6 +142,7 @@ export class TypeInference {
         private readonly _typeBuilder: TypeBuilder,
         private readonly _inferMaps: boolean,
         private readonly _inferEnums: boolean,
+        private readonly _combineClasses: boolean,
     ) {}
 
     private addValuesToAccumulator(
@@ -435,8 +458,22 @@ export class TypeInference {
             );
         }
 
+        if (this._combineClasses) {
+            return this._typeBuilder.getClassType(
+                typeAttributes,
+                properties,
+                forwardingRef,
+            );
+        }
+
+        // Graph rewrites otherwise deduplicate non-fixed classes again.
+        const uniqueAttributes =
+            uniqueInferenceClassTypeAttributeKind.setDefaultInAttributes(
+                typeAttributes,
+                () => true,
+            );
         return this._typeBuilder.getClassType(
-            typeAttributes,
+            uniqueAttributes,
             properties,
             forwardingRef,
         );
