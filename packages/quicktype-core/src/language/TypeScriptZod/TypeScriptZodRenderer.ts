@@ -168,7 +168,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
             },
             (_classType) => panic("Should already be handled."),
             (_mapType) => [
-                "z.record(z.string(), ",
+                "mapSchema(",
                 this.typeMapTypeFor(_mapType.values, false),
                 ")",
             ],
@@ -630,6 +630,14 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         }
 
         this.emitImports();
+        if (this.haveMaps) {
+            this.emitMultiline(`
+const mapSchema = <T extends z.ZodTypeAny>(value: T) =>
+    z.custom<Record<string, unknown>>(input => typeof input === "object" && input !== null && !Array.isArray(input))
+        .transform(Object.entries)
+        .pipe(z.array(z.tuple([z.string(), value])))
+        .transform((entries): Record<string, z.output<T>> => Object.fromEntries(entries));`);
+        }
         this.emitSchemas();
     }
 }
