@@ -297,11 +297,18 @@ export class SwiftRenderer extends ConvenienceRenderer {
                         "(json)",
                     );
                 } else {
+                    const decoder =
+                        this._options.convenienceInitializers ||
+                        this._options.alamofire
+                            ? "newJSONDecoder()"
+                            : "JSONDecoder()";
                     this.emitLine(
                         "//   let ",
                         modifySource(camelCase, name),
                         " = ",
-                        "try? newJSONDecoder().decode(",
+                        "try? ",
+                        decoder,
+                        ".decode(",
                         name,
                         ".self, from: jsonData)",
                     );
@@ -743,7 +750,9 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     private emitNewEncoderDecoder(): void {
-        this.emitBlock("func newJSONDecoder() -> JSONDecoder", () => {
+        const access = this._options.multiFileOutput ? "" : "fileprivate ";
+
+        this.emitBlock([access, "func newJSONDecoder() -> JSONDecoder"], () => {
             this.emitLine("let decoder = JSONDecoder()");
             if (!this._options.linux) {
                 this.emitBlock(
@@ -778,7 +787,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
             this.emitLine("return decoder");
         });
         this.ensureBlankLine();
-        this.emitBlock("func newJSONEncoder() -> JSONEncoder", () => {
+        this.emitBlock([access, "func newJSONEncoder() -> JSONEncoder"], () => {
             this.emitLine("let encoder = JSONEncoder()");
             if (!this._options.linux) {
                 this.emitBlock(
