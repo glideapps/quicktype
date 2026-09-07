@@ -873,6 +873,7 @@ export const SwiftLanguage: Language = {
     quickTestRendererOptions: [
         { "mutable-properties": "true" },
         { "coding-keys-protocol": "CaseIterable" },
+        ["simple-object.json", { "coding-keys-protocol": "CaseIterable" }],
         { "support-linux": "false" },
         { "coding-keys": "false" },
         { "struct-or-class": "class" },
