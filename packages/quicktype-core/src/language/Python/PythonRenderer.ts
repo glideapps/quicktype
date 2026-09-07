@@ -32,7 +32,11 @@ import { matchType, removeNullFromUnion } from "../../Type/TypeUtils.js";
 
 import { forbiddenPropertyNames, forbiddenTypeNames } from "./constants.js";
 import type { pythonOptions } from "./language.js";
-import { classNameStyle, snakeNameStyle } from "./utils.js";
+import {
+    classNameStyle,
+    isLegalPythonIdentifier,
+    snakeNameStyle,
+} from "./utils.js";
 
 export class PythonRenderer extends ConvenienceRenderer {
     private readonly imports: Map<string, Set<string>> = new Map();
@@ -68,9 +72,16 @@ export class PythonRenderer extends ConvenienceRenderer {
     }
 
     protected namerForObjectProperty(): Namer {
-        return funPrefixNamer("property", (s) =>
-            snakeNameStyle(s, false, this.pyOptions.nicePropertyNames),
-        );
+        return funPrefixNamer("property", (s) => {
+            if (
+                this.pyOptions.keepPropertyNames &&
+                isLegalPythonIdentifier(s)
+            ) {
+                return s;
+            }
+
+            return snakeNameStyle(s, false, this.pyOptions.nicePropertyNames);
+        });
     }
 
     protected makeUnionMemberNamer(): null {
