@@ -745,15 +745,19 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 this.emitBlock(
                     "if #available(iOS 10.0, OSX 10.12, tvOS 10.0, watchOS 3.0, *)",
                     () => {
-                        this.emitLine(
-                            "decoder.dateDecodingStrategy = .iso8601",
-                        );
+                        this.emitMultiline(`decoder.dateDecodingStrategy = .custom { decoder in
+    let dateStr = try decoder.singleValueContainer().decode(String.self).uppercased()
+    let dateData = try JSONEncoder().encode(dateStr)
+    let dateDecoder = JSONDecoder()
+    dateDecoder.dateDecodingStrategy = .iso8601
+    return try dateDecoder.decode(Date.self, from: dateData)
+}`);
                     },
                 );
             } else {
                 this.emitMultiline(`decoder.dateDecodingStrategy = .custom({ (decoder) -> Date in
 	let container = try decoder.singleValueContainer()
-	let dateStr = try container.decode(String.self)
+	let dateStr = try container.decode(String.self).uppercased()
 
 	let formatter = DateFormatter()
 	formatter.calendar = Calendar(identifier: .iso8601)
