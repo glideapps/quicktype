@@ -641,10 +641,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                         this.emitBlock(enumDeclaration, () => {
                             for (const group of groups) {
                                 const { name, label } = group[0];
-                                if (
-                                    this._options.explicitCodingKeys &&
-                                    label !== undefined
-                                ) {
+                                if (label !== undefined) {
                                     this.emitLine(
                                         "case ",
                                         name,
