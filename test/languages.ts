@@ -71,7 +71,6 @@ export interface Language {
     includeJSON?: string[];
     skipMiscJSON: boolean;
     skipSchema: string[];
-    additionalSchemaFiles?: string[];
     rendererOptions: RendererOptions;
     quickTestRendererOptions: (RendererOptions | [string, RendererOptions])[];
     sourceFiles?: string[];
@@ -139,9 +138,6 @@ export const CSharpLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    additionalSchemaFiles: [
-        "test/inputs/regressions/unicode-codepoint-length.schema",
-    ],
     skipSchema: [],
     // The default framework is SystemTextJson; this fixture deliberately
     // pins NewtonSoft so the Newtonsoft renderer keeps end-to-end coverage.
@@ -197,9 +193,6 @@ export const CSharpLanguageSystemTextJson: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    additionalSchemaFiles: [
-        "test/inputs/regressions/unicode-codepoint-length.schema",
-    ],
     skipSchema: [
         "optional-property.schema",
         // The following skips are pre-existing System.Text.Json renderer issues,
@@ -605,9 +598,6 @@ export const CJSONLanguage: Language = {
         "combinations2.json",
     ],
     skipMiscJSON: false,
-    additionalSchemaFiles: [
-        "test/inputs/regressions/unicode-codepoint-length.schema",
-    ],
     skipSchema: [
         /* Enum as TopLevel is not supported */
         "top-level-enum.schema",
@@ -749,9 +739,6 @@ export const CPlusPlusLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    additionalSchemaFiles: [
-        "test/inputs/regressions/unicode-codepoint-length.schema",
-    ],
     skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [
@@ -830,9 +817,6 @@ export const ElmLanguage: Language = {
         "list.json", // recursion
     ],
     skipMiscJSON: false,
-    additionalSchemaFiles: [
-        "test/inputs/regressions/unicode-codepoint-length.schema",
-    ],
     skipSchema: [
         "union-list.schema", // recursion
         "list.schema", // recursion
@@ -959,9 +943,6 @@ export const ObjectiveCLanguage: Language = {
         "blns-object.json",
     ],
     skipMiscJSON: false,
-    additionalSchemaFiles: [
-        "test/inputs/regressions/unicode-codepoint-length.schema",
-    ],
     skipSchema: ["optional-property.schema"],
     rendererOptions: { functions: "true" },
     quickTestRendererOptions: [],
@@ -998,9 +979,6 @@ export const TypeScriptLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    additionalSchemaFiles: [
-        "test/inputs/regressions/unicode-codepoint-length.schema",
-    ],
     skipSchema: [],
     rendererOptions: { "explicit-unions": "yes" },
     quickTestRendererOptions: [
@@ -1049,9 +1027,6 @@ export const JavaScriptLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    additionalSchemaFiles: [
-        "test/inputs/regressions/unicode-codepoint-length.schema",
-    ],
     skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [
@@ -1093,9 +1068,6 @@ export const JavaScriptPropTypesLanguage: Language = {
     skipJSON: [],
     skipSchema: ["optional-property.schema"],
     skipMiscJSON: false,
-    additionalSchemaFiles: [
-        "test/inputs/regressions/unicode-codepoint-length.schema",
-    ],
     rendererOptions: { "module-system": "es6" },
     quickTestRendererOptions: [{ converters: "top-level" }],
     sourceFiles: ["src/language/JavaScriptPropTypes/index.ts"],
@@ -1122,6 +1094,7 @@ export const FlowLanguage: Language = {
         "minmaxitems",
         "minmaxlength",
         "minmax",
+        "minmaxInteger",
     ],
     output: "TopLevel.js",
     topLevel: "TopLevel",
@@ -1304,7 +1277,9 @@ export const KotlinLanguage: Language = {
     skipDiffViaSchema: [
         "bug427.json",
         "keywords.json",
-        // TODO Investigate these
+        // The two graphs disambiguate enum case names against different
+        // proposed enum names, so cases such as `TypeRoad` become
+        // `PropertiesTypeRoad`.  Both programs are correct.
         "34702.json",
         "76ae1.json",
     ],
@@ -1341,6 +1316,9 @@ export const KotlinLanguage: Language = {
         "5f7fe.json",
         "f74d5.json",
         "a3d8c.json",
+        // ... and List<List<List<List<Double>>>>: DefaultConverter throws
+        // ClassCastException on the nested type parameter.
+        "af2d1.json",
         // Klaxon has a hard time with null inside collections
         "combinations1.json",
         "combinations2.json",
@@ -1349,9 +1327,6 @@ export const KotlinLanguage: Language = {
         "unions.json",
         "php-mixed-union.json",
         "nst-test-suite.json",
-        // These should be enabled
-        // TODO Investigate these
-        "af2d1.json",
     ],
     skipSchema: [
         "optional-property.schema",
@@ -1377,9 +1352,6 @@ export const KotlinLanguage: Language = {
         "keyword-unions.schema",
     ],
     skipMiscJSON: false,
-    additionalSchemaFiles: [
-        "test/inputs/regressions/unicode-codepoint-length.schema",
-    ],
     // The default framework is jackson; this fixture deliberately pins
     // klaxon so the Klaxon renderer keeps end-to-end coverage.
     rendererOptions: { framework: "klaxon" },
@@ -1422,9 +1394,6 @@ export const KotlinJacksonLanguage: Language = {
     skipJSON: [],
     skipSchema: ["optional-property.schema", "keyword-unions.schema"],
     skipMiscJSON: false,
-    additionalSchemaFiles: [
-        "test/inputs/regressions/unicode-codepoint-length.schema",
-    ],
     rendererOptions: { framework: "jackson" },
     quickTestRendererOptions: [],
     sourceFiles: ["src/language/Kotlin/index.ts"],
@@ -1480,7 +1449,6 @@ export const KotlinXLanguage: Language = {
     ],
     skipSchema: [
         "optional-property.schema",
-        "integer-before-number.schema", // Python-specific union-order regression.
         // Unions render as sealed classes without serializer wiring, so
         // deserialization fails at runtime (documented TODO in
         // KotlinXRenderer.ts).
@@ -1541,13 +1509,7 @@ export const DartLanguage: Language = {
     output: "TopLevel.dart",
     topLevel: "TopLevel",
     skipJSON: [],
-    additionalSchemaFiles: [
-        "test/inputs/regressions/unicode-codepoint-length.schema",
-    ],
-    skipSchema: [
-        "optional-property.schema",
-        "integer-before-number.schema", // Python-specific union-order regression.
-    ],
+    skipSchema: ["optional-property.schema"],
     skipMiscJSON: false,
     rendererOptions: {},
     // The default is final-props=true; this keeps the mutable-property
@@ -1603,9 +1565,6 @@ export const PikeLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    additionalSchemaFiles: [
-        "test/inputs/regressions/unicode-codepoint-length.schema",
-    ],
     skipSchema: [
         "optional-property.schema",
         // no implicit cast int <-> float in Pike
@@ -1733,9 +1692,9 @@ export const PHPLanguage: Language = {
     skipMiscJSON: false,
     skipSchema: [
         "optional-property.schema",
-        "integer-before-number.schema", // Python-specific union-order regression.
         // Unions are inlined as PHP union type declarations, so a
         // top-level union produces no named TopLevel class for the driver.
+        "integer-before-number.schema",
         "recursive-union-flattening.schema",
         // The driver does not support top-level arrays.
         "issue2680-top-level-array.schema",
@@ -1775,9 +1734,6 @@ export const TypeScriptZodLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    additionalSchemaFiles: [
-        "test/inputs/regressions/unicode-codepoint-length.schema",
-    ],
     skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [{ "just-schema": "true" }],
@@ -1814,9 +1770,6 @@ export const TypeScriptEffectSchemaLanguage: Language = {
     topLevel: "TopLevel",
     skipJSON: [],
     skipMiscJSON: false,
-    additionalSchemaFiles: [
-        "test/inputs/regressions/unicode-codepoint-length.schema",
-    ],
     skipSchema: [],
     rendererOptions: {},
     quickTestRendererOptions: [{ "just-schema": "true" }],
@@ -1878,9 +1831,6 @@ export const ElixirLanguage: Language = {
         "blns-object.json",
     ],
     skipMiscJSON: false,
-    additionalSchemaFiles: [
-        "test/inputs/regressions/unicode-codepoint-length.schema",
-    ],
     skipSchema: [
         // The test incorrectly succeeds due to the emitter being permissive for unions that contain only primitives. A future enhancement
         // for the Elixir emitter could be a user-controlled 'strict' mode that pattern matches even on unions of only primitive types.
