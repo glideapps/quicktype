@@ -34,6 +34,7 @@ import { descriptionAttributeProducer } from "../attributes/Description.js";
 import { enumValuesAttributeProducer } from "../attributes/EnumValues.js";
 import { StringTypes } from "../attributes/StringTypes.js";
 import {
+    TypeAttributeKind,
     type TypeAttributes,
     combineTypeAttributes,
     emptyTypeAttributes,
@@ -667,6 +668,53 @@ export type JSONSchemaAttributeProducer = (
     types: Set<JSONSchemaType>,
     unionCases: JSONSchema[] | undefined,
 ) => JSONSchemaAttributes | undefined;
+
+// `forType` attributes from custom producers belong to one schema occurrence.
+// Keep primitive types carrying them out of the intern pool so the attributes
+// cannot leak to other occurrences of the same primitive kind.
+class ForTypeIdentityTypeAttributeKind extends TypeAttributeKind<true> {
+    public constructor() {
+        super("forTypeIdentity");
+    }
+
+    public combine(_attributes: true[]): true {
+        return true;
+    }
+
+    public makeInferred(_attribute: true): true {
+        return true;
+    }
+
+    public requiresUniqueIdentity(_attribute: true): boolean {
+        return true;
+    }
+}
+
+const forTypeIdentityTypeAttributeKind = new ForTypeIdentityTypeAttributeKind();
+
+function makeForTypeAttributesUnique(
+    attributes: TypeAttributes,
+): TypeAttributes {
+    if (attributes.size === 0) return attributes;
+    return combineTypeAttributes(
+        "union",
+        attributes,
+        forTypeIdentityTypeAttributeKind.makeAttributes(true),
+    );
+}
+
+function makeCustomAttributeProducer(
+    producer: JSONSchemaAttributeProducer,
+): JSONSchemaAttributeProducer {
+    return (schema, canonicalRef, types, unionCases) => {
+        const attributes = producer(schema, canonicalRef, types, unionCases);
+        if (attributes?.forType === undefined) return attributes;
+        return {
+            ...attributes,
+            forType: makeForTypeAttributesUnique(attributes.forType),
+        };
+    };
+}
 
 function typeKindForJSONSchemaFormat(
     format: string,
@@ -1579,7 +1627,7 @@ export class JSONSchemaInput implements Input<JSONSchemaSourceData> {
             minMaxLengthAttributeProducer,
             minMaxItemsAttributeProducer,
             patternAttributeProducer,
-        ].concat(additionalAttributeProducers);
+        ].concat(additionalAttributeProducers.map(makeCustomAttributeProducer));
     }
 
     public get needIR(): boolean {
