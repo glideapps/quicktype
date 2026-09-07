@@ -31,7 +31,7 @@ import {
     DependencyName,
     FixedName,
     type Name,
-    type Namer,
+    Namer,
     Namespace,
     SimpleName,
     keywordNamespace,
@@ -51,7 +51,11 @@ import {
     type CommentOptions,
     isStringComment,
 } from "./support/Comments.js";
-import { trimEnd } from "./support/Strings.js";
+import {
+    splitIntoWords,
+    styleNameWithKnownAcronymIgnored,
+    trimEnd,
+} from "./support/Strings.js";
 import { assert, defined, nonNull, panic } from "./support/Support.js";
 import {
     type Transformation,
@@ -390,11 +394,27 @@ export abstract class ConvenienceRenderer extends Renderer {
         givenName: string,
         _maybeNamedType: Type | undefined,
     ): Name {
-        return new SimpleName(
-            [givenName],
-            defined(this._namedTypeNamer),
-            topLevelNameOrder,
-        );
+        const namedTypeNamer = defined(this._namedTypeNamer);
+        const words = splitIntoWords(givenName);
+        const onlyWord = words.length === 1 ? words[0] : undefined;
+        const shouldPreserveCasing =
+            onlyWord?.isAcronym === true &&
+            onlyWord.word !== onlyWord.word.toLowerCase() &&
+            onlyWord.word !== onlyWord.word.toUpperCase();
+        const topLevelNamer = shouldPreserveCasing
+            ? new Namer(
+                  `${namedTypeNamer.name}-top-level`,
+                  (rawName) =>
+                      styleNameWithKnownAcronymIgnored(
+                          onlyWord.word,
+                          namedTypeNamer.nameStyle,
+                          rawName,
+                      ),
+                  namedTypeNamer.prefixes,
+              )
+            : namedTypeNamer;
+
+        return new SimpleName([givenName], topLevelNamer, topLevelNameOrder);
     }
 
     private addNameForTopLevel(type: Type, givenName: string): Name {

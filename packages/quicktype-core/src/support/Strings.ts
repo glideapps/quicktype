@@ -348,6 +348,25 @@ export function startWithLetter(
 
 const knownAcronyms = new Set(acronyms);
 
+/**
+ * Applies a synchronous name style without recognizing one dictionary acronym.
+ * Name styles call `splitIntoWords` internally, so this preserves an explicitly
+ * cased name without changing acronym handling for other names.
+ */
+export function styleNameWithKnownAcronymIgnored(
+    acronym: string,
+    nameStyle: (rawName: string) => string,
+    rawName: string,
+): string {
+    const normalized = acronym.toLowerCase() as (typeof acronyms)[number];
+    const wasKnown = knownAcronyms.delete(normalized);
+    try {
+        return nameStyle(rawName);
+    } finally {
+        if (wasKnown) knownAcronyms.add(normalized);
+    }
+}
+
 export interface WordInName {
     isAcronym: boolean;
     word: string;
