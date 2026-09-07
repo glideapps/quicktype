@@ -1,0 +1,12 @@
+{
+    "extends": "../../tsconfig.json",
+    "compilerOptions": {
+        "noEmit": true,
+        "rootDir": ".",
+        "lib": ["ES2022", "DOM", "DOM.Iterable"],
+        "module": "Node16",
+        "moduleResolution": "Node16",
+        "types": ["node"]
+    },
+    "include": ["**/*.ts"]
+}

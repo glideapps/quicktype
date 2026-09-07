@@ -21,6 +21,8 @@ jobs:
               if: ${{ matrix.node-version == '24' }}
               run: npm run lint
             - run: npm run test:unit
+            - run: npm run check:prs
+            - run: npm run test:prs
             - run: node dist/index.js --version
             - name: Run representative fixtures on the minimum Node version
               if: ${{ matrix.node-version == '20' }}

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>quicktype · PR inbox</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main class="app" aria-label="PR inbox">
+    <header class="appbar">
+        <strong class="brand">quicktype</strong>
+        <button type="button" class="search-button" data-action="search" title="Find a PR (⌘K or /)">Find PR <kbd>⌘ K</kbd></button>
+        <span class="grow"></span><span id="connection" class="muted" role="status">Connecting…</span>
+        <button type="button" class="plain" data-action="refresh" title="Refresh GitHub data" aria-label="Refresh">↻</button>
+        <span class="mobile-nav"><button type="button" data-action="prev-pr" aria-label="Previous PR">↑</button><button type="button" data-action="next-pr" aria-label="Next PR">↓</button></span>
+        <button type="button" class="help-button" data-action="help" aria-label="Keyboard shortcuts">?</button>
+    </header>
+    <div id="global-error" class="global-error" hidden></div>
+    <div class="appbody inbox-grid">
+        <aside class="queue"><div class="queue-label"><span id="queue-count">Loading PRs…</span><div class="row"><button type="button" data-action="prev-pr" title="Previous PR (↑)" aria-label="Previous PR">↑</button><button type="button" data-action="next-pr" title="Next PR (↓)" aria-label="Next PR">↓</button></div></div><div id="queue-list" class="queue-list scroll"></div></aside>
+        <section class="inbox-main"><div id="heading" class="pr-heading"><p class="muted">The inbox opens as soon as the PR list arrives.</p></div><nav id="tabs" class="view-tabs" aria-label="PR panels"></nav><div id="panel" class="panel scroll grow" tabindex="-1"></div></section>
+        <aside class="inspector" aria-label="Description and comments"><section class="pr-description" aria-label="PR description"><div class="comments-label">Description</div><div id="description" class="description-full" ></div></section><div id="comments-label" class="comments-label">Comments</div><div id="comments" class="comments-scroll scroll" tabindex="-1"></div></aside>
+    </div>
+</main>
+<dialog id="modal" aria-labelledby="modal-title"></dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="announcement" class="sr-only" aria-live="polite"></div>
+<script type="module" src="/main.js"></script>
+</body>
+</html>
