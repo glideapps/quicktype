@@ -11,6 +11,7 @@
       "and_eq": { "and_eq": 123 },
       "any": { "any": 123 },
       "Any": { "Any": 123 },
+      "ArrayNode": { "ArrayNode": 123 },
       "array": { "array": 123 },
       "as": { "as": 123 },
       "asm": { "asm": 123 },
@@ -30,6 +31,7 @@
       "BOOL": { "BOOL": 123 },
       "bool": { "bool": 123 },
       "boolean": { "boolean": 123 },
+      "BooleanNode": { "BooleanNode": 123 },
       "break": { "break": 123 },
       "bycopy": { "bycopy": 123 },
       "byref": { "byref": 123 },
@@ -62,11 +64,11 @@
       "convenience": { "convenience": 123 },
       "convert": { "convert": 123 },
       "converter": { "converter": 123 },
-      "CultureInfo": { "CultureInfo": 123 },
-      "date": { "date": 123 },
       "dummy": 123
     },
   "obj2": {
+      "CultureInfo": { "CultureInfo": 123 },
+      "date": { "date": 123 },
       "date_parse_handling": { "date_parse_handling": 123 },
       "DateFormatter": { "DateFormatter": 123 },
       "DateOnly": { "DateOnly": 123 },
@@ -93,6 +95,7 @@
       "didSet": { "didSet": 123 },
       "do": { "do": 123 },
       "double": { "double": 123 },
+      "DoubleNode": { "DoubleNode": 123 },
       "dynamic": { "dynamic": 123 },
       "dynamic_cast": { "dynamic_cast": 123 },
       "elif": { "elif": 123 },
@@ -128,12 +131,12 @@
       "from_dict": { "from_dict": 123 },
       "from_json": { "from_json": 123 },
       "func": { "func": 123 },
-      "function": { "function": 123 },
-      "get": { "get": 123 },
-      "global": { "global": 123 },
       "dummy": 123
     },
   "obj3": {
+      "function": { "function": 123 },
+      "get": { "get": 123 },
+      "global": { "global": 123 },
       "go": { "go": 123 },
       "goto": { "goto": 123 },
       "guard": { "guard": 123 },
@@ -155,6 +158,7 @@
       "inout": { "inout": 123 },
       "instanceof": { "instanceof": 123 },
       "int": { "int": 123 },
+      "IntNode": { "IntNode": 123 },
       "interface": { "interface": 123 },
       "internal": { "internal": 123 },
       "IsoDateTimeOffsetConverter": { "IsoDateTimeOffsetConverter": 123 },
@@ -184,6 +188,7 @@
       "left": { "left": 123 },
       "let": { "let": 123 },
       "list": { "list": 123 },
+      "LongNode": { "LongNode": 123 },
       "Locale": { "Locale": 123 },
       "lock": { "lock": 123 },
       "long": { "long": 123 },
@@ -193,14 +198,15 @@
       "module": { "module": 123 },
       "mutable": { "mutable": 123 },
       "mutating": { "mutating": 123 },
+      "dummy": 123
+    },
+  "obj4": {
       "namespace": { "namespace": 123 },
       "native": { "native": 123 },
       "new": { "new": 123 },
       "newtonsoft": { "newtonsoft": 123 },
       "nil": { "nil": 123 },
-      "dummy": 123
-    },
-  "obj4": {
+      "NullNode": { "NullNode": 123 },
       "NO": { "NO": 123 },
       "noexcept": { "noexcept": 123 },
       "nonatomic": { "nonatomic": 123 },
@@ -219,6 +225,7 @@
       "nullptr": { "nullptr": 123 },
       "number": { "number": 123 },
       "object": { "object": 123 },
+      "ObjectNode": { "ObjectNode": 123 },
       "ObjectMapper": { "ObjectMapper": 123 },
       "ObjectReader": { "ObjectReader": 123 },
       "ObjectWriter": { "ObjectWriter": 123 },
@@ -258,6 +265,9 @@
       "require": { "require": 123 },
       "required": { "required": 123 },
       "requires": { "requires": 123 },
+      "dummy": 123
+    },
+  "obj5": {
       "restrict": { "restrict": 123 },
       "retain": { "retain": 123 },
       "rethrows": { "rethrows": 123 },
@@ -265,9 +275,6 @@
       "right": { "right": 123 },
       "runtimeType": { "runtimeType": 123 },
       "s": { "s": 123 },
-      "dummy": 123
-    },
-  "obj5": {
       "sbyte": { "sbyte": 123 },
       "sealed": { "sealed": 123 },
       "SEL": { "SEL": 123 },
@@ -277,11 +284,11 @@
       "self": { "self": 123 },
       "Sendable": { "Sendable": 123 },
       "serialize": { "serialize": 123 },
-      "SerializationFeature": { "SerializationFeature": 123 },
       "SerialName": { "SerialName": 123 },
       "KSerializer": { "KSerializer": 123 },
       "PrimitiveKind": { "PrimitiveKind": 123 },
       "SerialDescriptor": { "SerialDescriptor": 123 },
+      "SerializationFeature": { "SerializationFeature": 123 },
       "SerializerProvider": { "SerializerProvider": 123 },
       "set": { "set": 123 },
       "short": { "short": 123 },
@@ -307,6 +314,7 @@
       "template": { "template": 123 },
       "then": { "then": 123 },
       "this": { "this": 123 },
+      "TextNode": { "TextNode": 123 },
       "thread_local": { "thread_local": 123 },
       "throw": { "throw": 123 },
       "throws": { "throws": 123 },
@@ -324,6 +332,9 @@
       "Type": { "Type": 123 },
       "type": { "type": 123 },
       "typealias": { "typealias": 123 },
+      "dummy": 123
+    },
+  "obj6": {
       "typedef": { "typedef": 123 },
       "typeid": { "typeid": 123 },
       "typename": { "typename": 123 },
@@ -332,9 +343,6 @@
       "ulong": { "ulong": 123 },
       "unchecked": { "unchecked": 123 },
       "undefined": { "undefined": 123 },
-      "dummy": 123
-    },
-  "obj6": {
       "union": { "union": 123 },
       "UseSerializers": { "UseSerializers": 123 },
       "unowned": { "unowned": 123 },

@@ -7,12 +7,28 @@
             "additionalProperties": {
                 "$ref": "#/definitions/thing"
             }
-        }
+        },
+        "arrayNode": { "$ref": "#/definitions/ArrayNode" },
+        "booleanNode": { "$ref": "#/definitions/BooleanNode" },
+        "doubleNode": { "$ref": "#/definitions/DoubleNode" },
+        "intNode": { "$ref": "#/definitions/IntNode" },
+        "longNode": { "$ref": "#/definitions/LongNode" },
+        "nullNode": { "$ref": "#/definitions/NullNode" },
+        "objectNode": { "$ref": "#/definitions/ObjectNode" },
+        "textNode": { "$ref": "#/definitions/TextNode" }
     },
     "required": [
         "stuff"
     ],
     "definitions": {
+        "ArrayNode": { "type": "object", "additionalProperties": false },
+        "BooleanNode": { "type": "object", "additionalProperties": false },
+        "DoubleNode": { "type": "object", "additionalProperties": false },
+        "IntNode": { "type": "object", "additionalProperties": false },
+        "LongNode": { "type": "object", "additionalProperties": false },
+        "NullNode": { "type": "object", "additionalProperties": false },
+        "ObjectNode": { "type": "object", "additionalProperties": false },
+        "TextNode": { "type": "object", "additionalProperties": false },
         "thing": {
             "type": "object",
             "additionalProperties": false,
