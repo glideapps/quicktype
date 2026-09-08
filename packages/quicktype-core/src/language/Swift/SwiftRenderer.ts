@@ -808,9 +808,15 @@ export class SwiftRenderer extends ConvenienceRenderer {
                 this.emitBlock(
                     "if #available(iOS 10.0, OSX 10.12, tvOS 10.0, watchOS 3.0, *)",
                     () => {
-                        this.emitLine(
-                            "encoder.dateEncodingStrategy = .iso8601",
-                        );
+                        this.emitMultiline(`encoder.dateEncodingStrategy = .custom { date, encoder in
+    let formatter = ISO8601DateFormatter()
+    if #available(iOS 11.0, OSX 10.13, tvOS 11.0, watchOS 4.0, *),
+        date.timeIntervalSince1970.truncatingRemainder(dividingBy: 1) != 0 {
+        formatter.formatOptions.insert(.withFractionalSeconds)
+    }
+    var container = encoder.singleValueContainer()
+    try container.encode(formatter.string(from: date))
+}`);
                     },
                 );
             } else {
