@@ -297,6 +297,8 @@ export const PythonLanguage: Language = {
         "union",
         "no-defaults",
         "date-time",
+        "date",
+        "time",
         "integer-string",
         "bool-string",
         "uuid",
