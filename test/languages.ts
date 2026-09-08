@@ -43,6 +43,8 @@ export type LanguageFeature =
     | "no-defaults"
     | "strict-optional"
     | "date-time"
+    | "date"
+    | "time"
     | "integer"
     | "integer-string"
     | "bool-string"
@@ -1481,7 +1483,8 @@ export const DartLanguage: Language = {
     name: "dart",
     base: "test/fixtures/dart",
     compileCommandForOptions(options) {
-        return options["use-freezed"] === "true"
+        return options["use-freezed"] === "true" ||
+            options["use-json-annotation"] === "true"
             ? "dart pub get && mkdir -p lib && cp TopLevel.dart lib/top_level.dart && sed -i.bak s/TopLevel.dart/top_level.dart/ parser.dart && dart pub run build_runner build --delete-conflicting-outputs && cp lib/top_level*.dart ."
             : undefined;
     },
@@ -1542,6 +1545,7 @@ export const DartLanguage: Language = {
         ["copy-with-property.json", { "copy-with": "true" }],
         ["simple-object.json", { "required-props": "true" }],
         ["identifiers.json", { "use-freezed": "true" }],
+        ["identifiers.json", { "use-json-annotation": "true" }],
     ],
     sourceFiles: ["src/language/Dart/index.ts"],
 };

@@ -709,7 +709,7 @@ export class DartRenderer extends ConvenienceRenderer {
 
             if (this._options.useJsonAnnotation) {
                 this.classPropertyCounter++;
-                this.emitLine(`@JsonKey(name: "${jsonName}")`);
+                this.emitLine(`@JsonKey(name: "${stringEscape(jsonName)}")`);
             }
 
             this.emitLine(

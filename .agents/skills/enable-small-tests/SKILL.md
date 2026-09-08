@@ -12,10 +12,12 @@ Turn disabled coverage into small, independently reviewable fixes. Read the repo
 - **At most 15 production lines added plus removed per fix**, including formatting changes. Use normal repository formatting. Do not compress code, hide implementation in test helpers, or split one larger fix into artificial pieces to meet the limit.
 - Keep each PR small and coherent. Prefer one independent fix per PR. Closely related collisions exposed by the same shared test can share a small PR; report each fix's line count. A count limit is not permission to accumulate a large PR.
 - **Combine all test-only changes into one PR**, across languages. Keep regression cases with their production fix. Put shared harness improvements in the test-only PR instead of copying them into every branch.
+- Every PR must enable new tests in its own diff. Identify the tests, shared cases, or renderer options newly executed there; coverage added only by a future PR does not count.
 - Focus on Dart, Swift, and TypeScript by default. Use the requested PR count, including the combined test-only PR; the original batch requested 20, which is not a standing quota. Do not pad a batch with cosmetic changes or duplicated fixes. Report a shortfall if suitable candidates run out.
 - **Use shared test cases, not new per-bug fixtures.** General inputs, especially keyword cases, must run across languages. A newly discovered bug does not by itself justify a new driver, fixture registration, schema, or language-only input list.
 - Preserve intended generated naming. Reject “stabilize names” changes whose only purpose is making JSON-versus-schema output text identical. Renaming is justified when the original name actually prevents compilation or runtime behavior, with evidence.
 - Modify only relevant code; respect existing abstraction boundaries. No unrelated cleanup, version bumps, or tombstone comments/docs explaining removed behavior.
+- Emit new generated functions, definitions, and imports only when the input types or renderer options require them. Validate generated output both with and without that requirement.
 - Write descriptions, comments, commits, and summaries tersely. Explain **what and why**, include useful links and validation, and omit praise and conversational history.
 
 ## Find candidates

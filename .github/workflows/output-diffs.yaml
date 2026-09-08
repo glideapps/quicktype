@@ -51,24 +51,37 @@ jobs:
         if: github.event_name == 'pull_request'
         runs-on: ubuntu-22.04
         steps:
-            - name: Restore exact base snapshot
-              id: base-cache
-              uses: actions/cache/restore@v4
-              with:
-                  path: .output-diffs/base
-                  key: ${{ env.OUTPUT_SNAPSHOT_CACHE_PREFIX }}-${{ runner.os }}-${{ github.event.pull_request.base.sha }}
-
             - name: Check out tested PR merge
               uses: actions/checkout@v4
               with:
                   ref: ${{ github.sha }}
                   path: head-source
+                  fetch-depth: 2
+
+            - name: Resolve tested base
+              id: tested-base
+              working-directory: head-source
+              shell: bash
+              run: |
+                  read -ra commit <<< "$(git rev-list --parents -n 1 HEAD)"
+                  if [[ "${#commit[@]}" -ne 3 ]]; then
+                      echo "Expected the tested PR commit to have two parents" >&2
+                      exit 1
+                  fi
+                  echo "sha=${commit[1]}" >> "$GITHUB_OUTPUT"
+
+            - name: Restore exact base snapshot
+              id: base-cache
+              uses: actions/cache/restore@v4
+              with:
+                  path: .output-diffs/base
+                  key: ${{ env.OUTPUT_SNAPSHOT_CACHE_PREFIX }}-${{ runner.os }}-${{ steps.tested-base.outputs.sha }}
 
             - name: Check out base after a cache miss
               if: steps.base-cache.outputs.cache-hit != 'true'
               uses: actions/checkout@v4
               with:
-                  ref: ${{ github.event.pull_request.base.sha }}
+                  ref: ${{ steps.tested-base.outputs.sha }}
                   path: base-source
 
             - name: Check snapshot compatibility
@@ -116,7 +129,7 @@ jobs:
               uses: actions/cache/save@v4
               with:
                   path: .output-diffs/base
-                  key: ${{ env.OUTPUT_SNAPSHOT_CACHE_PREFIX }}-${{ runner.os }}-${{ github.event.pull_request.base.sha }}
+                  key: ${{ env.OUTPUT_SNAPSHOT_CACHE_PREFIX }}-${{ runner.os }}-${{ steps.tested-base.outputs.sha }}
 
             - name: Build tested PR merge
               if: steps.compatibility.outputs.supported == 'true' && (steps.base-cache.outputs.cache-hit == 'true' || steps.base-snapshot.outcome == 'success')
@@ -151,7 +164,7 @@ jobs:
 
             - name: Write comparison metadata
               env:
-                  BASE_SHA: ${{ github.event.pull_request.base.sha }}
+                  BASE_SHA: ${{ steps.tested-base.outputs.sha }}
                   HEAD_SHA: ${{ github.event.pull_request.head.sha }}
                   PR_NUMBER: ${{ github.event.pull_request.number }}
                   PR_SHA: ${{ github.sha }}
