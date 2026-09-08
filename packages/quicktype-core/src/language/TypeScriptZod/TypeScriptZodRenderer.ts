@@ -633,7 +633,7 @@ export class TypeScriptZodRenderer extends ConvenienceRenderer {
         if (this.haveMaps) {
             this.emitMultiline(`
 const mapSchema = <T extends z.ZodTypeAny>(value: T) =>
-    z.custom<Record<string, unknown>>(input => typeof input === "object" && input !== null && !Array.isArray(input))
+    z.custom<Record<string, unknown>>(input => z.getParsedType(input) === z.ZodParsedType.object)
         .transform(Object.entries)
         .pipe(z.array(z.tuple([z.string(), value])))
         .transform((entries): Record<string, z.output<T>> => Object.fromEntries(entries));`);

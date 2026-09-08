@@ -90,7 +90,8 @@
         "typescript": "~7.0.2",
         "vitest": "^4.1.10",
         "watch": "^1.0.2",
-        "web-tree-sitter": "^0.26.9"
+        "web-tree-sitter": "^0.26.9",
+        "zod": "3.20.2"
     },
     "files": [
         "dist"
