@@ -184,6 +184,7 @@
         "Locale",
         "lock",
         "long",
+        "makeDictEncoder",
         "map",
         "MarshalJSON",
         "MapEntry",

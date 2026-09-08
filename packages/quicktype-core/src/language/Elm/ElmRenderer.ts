@@ -67,6 +67,8 @@ export class ElmRenderer extends ConvenienceRenderer {
     }
 
     protected forbiddenNamesForGlobalNamespace(): readonly string[] {
+        if (this.forEachType((type) => type.kind).has("map"))
+            return [...forbiddenNames, "makeDictEncoder"];
         return forbiddenNames;
     }
 
