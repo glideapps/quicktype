@@ -78,6 +78,9 @@ export class JavaRenderer extends ConvenienceRenderer {
                 this._dateTimeProvider = new Java8DateTimeProvider(
                     this,
                     this._converterClassname,
+                    [...renderContext.typeGraph.allTypesUnordered()].some(
+                        (t) => t.kind === "date-time",
+                    ),
                 );
                 break;
         }

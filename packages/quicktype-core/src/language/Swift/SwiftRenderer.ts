@@ -48,6 +48,8 @@ export class SwiftRenderer extends ConvenienceRenderer {
 
     private _needNull = false;
 
+    private _haveDateTime = false;
+
     public constructor(
         targetLanguage: TargetLanguage,
         renderContext: RenderContext,
@@ -215,6 +217,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
             },
             (transformedStringType) => {
                 if (transformedStringType.kind === "date-time") {
+                    this._haveDateTime = true;
                     return "Date";
                 }
                 if (transformedStringType.kind === "uuid") return "UUID";
@@ -743,6 +746,23 @@ export class SwiftRenderer extends ConvenienceRenderer {
     }
 
     private emitNewEncoderDecoder(): void {
+        if (this._haveDateTime) {
+            this.emitMultiline(`private func isValidDate(_ value: String) -> Bool {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.timeZone = TimeZone(secondsFromGMT: 0)
+    formatter.dateFormat = "u-MM-dd"
+    formatter.isLenient = false
+    return formatter.date(from: String(value.prefix(10))) != nil
+}`);
+            this.ensureBlankLine();
+        }
+        const dateValidation = this._haveDateTime
+            ? `
+    guard isValidDate(dateStr) else {
+        throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "Invalid date"))
+    }`
+            : "";
         this.emitBlock("func newJSONDecoder() -> JSONDecoder", () => {
             this.emitLine("let decoder = JSONDecoder()");
             if (!this._options.linux) {
@@ -750,7 +770,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
                     "if #available(iOS 10.0, OSX 10.12, tvOS 10.0, watchOS 3.0, *)",
                     () => {
                         this.emitMultiline(`decoder.dateDecodingStrategy = .custom { decoder in
-    let dateStr = try decoder.singleValueContainer().decode(String.self).uppercased()
+    let dateStr = try decoder.singleValueContainer().decode(String.self).uppercased()${dateValidation}
     let dateData = try JSONEncoder().encode(dateStr)
     let dateDecoder = JSONDecoder()
     dateDecoder.dateDecodingStrategy = .iso8601
@@ -761,7 +781,7 @@ export class SwiftRenderer extends ConvenienceRenderer {
             } else {
                 this.emitMultiline(`decoder.dateDecodingStrategy = .custom({ (decoder) -> Date in
 	let container = try decoder.singleValueContainer()
-	let dateStr = try container.decode(String.self).uppercased()
+	let dateStr = try container.decode(String.self).uppercased()${dateValidation}
 
 	let formatter = DateFormatter()
 	formatter.calendar = Calendar(identifier: .iso8601)
