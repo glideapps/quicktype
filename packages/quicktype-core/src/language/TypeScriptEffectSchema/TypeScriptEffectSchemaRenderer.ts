@@ -155,9 +155,9 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
             },
             (_classType) => panic("Should already be handled."),
             (_mapType) => [
-                "S.Record({ key: S.String, value: ",
+                "mapSchema(",
                 this.typeMapTypeFor(_mapType.values, false),
-                "})",
+                ")",
             ],
             (_enumType) => panic("Should already be handled."),
             (unionType) => {
@@ -406,6 +406,26 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
         }
 
         this.emitImports();
+        if (this.haveMaps) {
+            this.emitMultiline(`
+const objectSchema = <A>() =>
+    S.declare(
+        (input): input is Record<string, A> =>
+            typeof input === "object" && input !== null && !Array.isArray(input)
+    );
+const mapSchema = <A, I, R>(value: S.Schema<A, I, R>) => {
+    const entries = S.transform(objectSchema<unknown>(), S.Array(S.Tuple(S.String, value)), {
+        strict: false,
+        decode: Object.entries,
+        encode: Object.fromEntries
+    });
+    return S.transform(entries, objectSchema<A>(), {
+        strict: false,
+        decode: Object.fromEntries,
+        encode: Object.entries
+    });
+};`);
+        }
         this.emitSchemas();
     }
 }

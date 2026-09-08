@@ -1261,6 +1261,13 @@
             ],
             "title": "union_long"
         },
+        "makeDictEncoder": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "makeDictEncoder" }
+            ],
+            "title": "union_makeDictEncoder"
+        },
         "map": {
             "oneOf": [
                 { "type": "number" },

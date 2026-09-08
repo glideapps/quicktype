@@ -186,6 +186,7 @@
       "Locale": { "Locale": 123 },
       "lock": { "lock": 123 },
       "long": { "long": 123 },
+      "makeDictEncoder": { "makeDictEncoder": 123 },
       "map": { "map": 123 },
       "MarshalJSON": { "MarshalJSON": 123 },
       "MapEntry": { "MapEntry": 123 },
@@ -197,11 +198,11 @@
       "native": { "native": 123 },
       "new": { "new": 123 },
       "newtonsoft": { "newtonsoft": 123 },
-      "nil": { "nil": 123 },
-      "NO": { "NO": 123 },
       "dummy": 123
     },
   "obj4": {
+      "nil": { "nil": 123 },
+      "NO": { "NO": 123 },
       "noexcept": { "noexcept": 123 },
       "nonatomic": { "nonatomic": 123 },
       "none": { "none": 123 },
@@ -264,11 +265,11 @@
       "runtimeType": { "runtimeType": 123 },
       "s": { "s": 123 },
       "sbyte": { "sbyte": 123 },
-      "sealed": { "sealed": 123 },
-      "SEL": { "SEL": 123 },
       "dummy": 123
     },
   "obj5": {
+      "sealed": { "sealed": 123 },
+      "SEL": { "SEL": 123 },
       "select": { "select": 123 },
       "Self": { "Self": 123 },
       "Serializable": { "Serializable": 123 },
@@ -331,12 +332,12 @@
       "undefined": { "undefined": 123 },
       "union": { "union": 123 },
       "UnmarshalJSON": { "UnmarshalJSON": 123 },
-      "UseSerializers": { "UseSerializers": 123 },
-      "unowned": { "unowned": 123 },
-      "unsafe": { "unsafe": 123 },
       "dummy": 123
     },
   "obj6": {
+      "UseSerializers": { "UseSerializers": 123 },
+      "unowned": { "unowned": 123 },
+      "unsafe": { "unsafe": 123 },
       "unsigned": { "unsigned": 123 },
       "ushort": { "ushort": 123 },
       "using": { "using": 123 },
