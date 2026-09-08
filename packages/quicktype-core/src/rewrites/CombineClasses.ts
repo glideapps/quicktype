@@ -108,7 +108,15 @@ function tryAddToClique(
     c: ClassType,
     clique: Clique,
     onlyWithSameProperties: boolean,
+    topLevels: ReadonlySet<Type>,
 ): boolean {
+    if (
+        topLevels.has(c) &&
+        clique.members.some((member) => topLevels.has(member))
+    ) {
+        return false;
+    }
+
     for (const prototype of clique.prototypes) {
         if (prototype.structurallyCompatible(c)) {
             clique.members.push(c);
@@ -132,6 +140,10 @@ function findSimilarityCliques(
     onlyWithSameProperties: boolean,
     includeFixedClasses: boolean,
 ): ClassType[][] {
+    // Distinct named top-levels must not be heuristically combined.  Exactly
+    // identical top-levels can already have been deduplicated during inference.
+    // Top-levels can still combine with nested classes to preserve recursion.
+    const topLevels = new Set(graph.topLevels.values());
     const classCandidates = Array.from(
         graph.allNamedTypesSeparated().objects,
     ).filter(
@@ -142,7 +154,9 @@ function findSimilarityCliques(
     for (const c of classCandidates) {
         let cliqueIndex: number | undefined;
         for (let i = 0; i < cliques.length; i++) {
-            if (tryAddToClique(c, cliques[i], onlyWithSameProperties)) {
+            if (
+                tryAddToClique(c, cliques[i], onlyWithSameProperties, topLevels)
+            ) {
                 cliqueIndex = i;
                 break;
             }
