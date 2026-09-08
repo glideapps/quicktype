@@ -17,7 +17,7 @@ Turn disabled coverage into small, independently reviewable fixes. Read the repo
 - **Use shared test cases, not new per-bug fixtures.** General inputs, especially keyword cases, must run across languages. A newly discovered bug does not by itself justify a new driver, fixture registration, schema, or language-only input list.
 - Preserve intended generated naming. Reject “stabilize names” changes whose only purpose is making JSON-versus-schema output text identical. Renaming is justified when the original name actually prevents compilation or runtime behavior, with evidence.
 - Modify only relevant code; respect existing abstraction boundaries. No unrelated cleanup, version bumps, or tombstone comments/docs explaining removed behavior.
-- Emit new generated functions, definitions, and imports only when the input types or renderer options require them. Validate generated output both with and without that requirement.
+- Emit new generated functions, definitions, and imports only when the input types or renderer options require them. Review the generated-output diff for unnecessary helpers, codecs, imports, or renamed types; do not add unit tests solely to assert helper or import presence or absence, or codec definition counts. Keep unit tests for API behavior and meaningful public naming regressions that fixtures cannot express.
 - Write descriptions, comments, commits, and summaries tersely. Explain **what and why**, include useful links and validation, and omit praise and conversational history.
 
 ## Find candidates

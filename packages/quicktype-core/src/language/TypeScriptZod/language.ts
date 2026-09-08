@@ -43,6 +43,8 @@ export class TypeScriptZodTargetLanguage extends TargetLanguage<
         const mapping: Map<TransformedStringTypeKind, PrimitiveStringTypeKind> =
             new Map();
         const dateTimeType = "date-time";
+        mapping.set("date", "date");
+        mapping.set("time", "time");
         mapping.set("date-time", dateTimeType);
         mapping.set("uuid", "uuid");
         mapping.set("bool-string", "bool-string");
