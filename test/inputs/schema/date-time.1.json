@@ -2,6 +2,9 @@
     "date": "1985-04-12",
     "time": "23:20:50.52+02:00",
     "date-time": "2018-08-13T21:31:01+01:00",
+    "local-date-class": {},
+    "offset-date-time-class": {},
+    "offset-time-class": {},
     "union-array": ["1985-04-12", "23:20:50.52Z"],
     "complex-union-array": ["2018-08-13T21:31:01+00:10", "foo", 123]
 }

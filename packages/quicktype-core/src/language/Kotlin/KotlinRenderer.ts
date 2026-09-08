@@ -45,7 +45,13 @@ export class KotlinRenderer extends ConvenienceRenderer {
     }
 
     protected forbiddenNamesForGlobalNamespace(): readonly string[] {
-        return keywords;
+        const forbidden: string[] = [...keywords];
+        if (this.haveTransformedStringType("date")) forbidden.push("LocalDate");
+        if (this.haveTransformedStringType("date-time"))
+            forbidden.push("OffsetDateTime");
+        if (this.haveTransformedStringType("time"))
+            forbidden.push("OffsetTime");
+        return forbidden;
     }
 
     protected forbiddenForObjectProperties(

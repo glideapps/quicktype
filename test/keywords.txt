@@ -180,6 +180,7 @@ lazy
 left
 let
 list
+LocalDate
 LongNode
 Locale
 lock
@@ -215,6 +216,8 @@ null
 nullptr
 number
 object
+OffsetDateTime
+OffsetTime
 ObjectNode
 ObjectMapper
 ObjectReader

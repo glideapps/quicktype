@@ -1275,6 +1275,13 @@
             ],
             "title": "union_list"
         },
+        "LocalDate": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "LocalDate" }
+            ],
+            "title": "union_LocalDate"
+        },
         "LongNode": {
             "oneOf": [
                 { "type": "number" },
@@ -1519,6 +1526,20 @@
                 { "type": "object", "additionalProperties": false, "title": "object" }
             ],
             "title": "union_object"
+        },
+        "OffsetDateTime": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "OffsetDateTime" }
+            ],
+            "title": "union_OffsetDateTime"
+        },
+        "OffsetTime": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "OffsetTime" }
+            ],
+            "title": "union_OffsetTime"
         },
         "ObjectNode": {
             "oneOf": [

@@ -14,6 +14,21 @@
             "type": "string",
             "format": "date-time"
         },
+        "local-date-class": {
+            "type": "object",
+            "additionalProperties": false,
+            "title": "LocalDate"
+        },
+        "offset-date-time-class": {
+            "type": "object",
+            "additionalProperties": false,
+            "title": "OffsetDateTime"
+        },
+        "offset-time-class": {
+            "type": "object",
+            "additionalProperties": false,
+            "title": "OffsetTime"
+        },
         "union-array": {
             "type": "array",
             "items": {
