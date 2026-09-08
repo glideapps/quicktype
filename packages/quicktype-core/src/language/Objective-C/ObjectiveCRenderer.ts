@@ -936,7 +936,10 @@ export class ObjectiveCRenderer extends ConvenienceRenderer {
                                 }
                                 if (property.type.kind === "date-time") {
                                     this.emitLine(
-                                        `if (dict[@"${objectiveCStringEscape(jsonName)}"] && [dict[@"${objectiveCStringEscape(jsonName)}"] rangeOfString:@"^[0-9]{4}-[0-9]{2}-[0-9]{2}T" options:NSRegularExpressionSearch].location == NSNotFound) return nil;`,
+                                        `if (dict[@"${objectiveCStringEscape(jsonName)}"] && [dict[@"${objectiveCStringEscape(jsonName)}"] rangeOfString:@"^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt](?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\\\\.[0-9]+)?(?:[Zz]|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])?$" options:NSRegularExpressionSearch].location == NSNotFound) return nil;`,
+                                    );
+                                    this.emitLine(
+                                        `if (dict[@"${objectiveCStringEscape(jsonName)}"] && ![[[[NSISO8601DateFormatter new] stringFromDate:[[NSISO8601DateFormatter new] dateFromString:[[dict[@"${objectiveCStringEscape(jsonName)}"] substringToIndex:10] stringByAppendingString:@"T00:00:00Z"]]] substringToIndex:10] isEqualToString:[dict[@"${objectiveCStringEscape(jsonName)}"] substringToIndex:10]]) return nil;`,
                                     );
                                 }
                                 if (
