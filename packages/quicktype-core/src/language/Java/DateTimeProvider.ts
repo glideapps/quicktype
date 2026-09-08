@@ -6,6 +6,7 @@ export abstract class JavaDateTimeProvider {
     public constructor(
         protected readonly _renderer: JavaRenderer,
         protected readonly _className: string,
+        protected readonly _useStrictDateTime = false,
     ) {}
 
     public abstract keywords: string[];
@@ -105,15 +106,20 @@ export class Java8DateTimeProvider extends JavaDateTimeProvider {
                     ".appendOptional(DateTimeFormatter.ISO_INSTANT)",
                 );
                 this._renderer.emitLine(
-                    '.appendOptional(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SX"))',
+                    '.appendOptional(DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss.SX"))',
                 );
                 this._renderer.emitLine(
-                    '.appendOptional(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssX"))',
+                    '.appendOptional(DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ssX"))',
                 );
                 this._renderer.emitLine(
-                    '.appendOptional(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))',
+                    '.appendOptional(DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss"))',
                 );
                 this._renderer.emitLine(".toFormatter()");
+                if (this._useStrictDateTime) {
+                    this._renderer.emitLine(
+                        ".withResolverStyle(java.time.format.ResolverStyle.STRICT)",
+                    );
+                }
                 this._renderer.emitLine(".withZone(ZoneOffset.UTC);");
             }),
         );
