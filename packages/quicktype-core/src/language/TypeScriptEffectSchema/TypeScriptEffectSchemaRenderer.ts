@@ -195,11 +195,11 @@ export class TypeScriptEffectSchemaRenderer extends ConvenienceRenderer {
                         ? 'S.transform(S.Literal("true", "false"), S.Boolean, { strict: true, decode: (value) => value === "true", encode: (value) => value ? "true" : "false" })'
                         : 'S.Literal("true", "false")';
                 if (_transformedStringType.kind === "date")
-                    return "S.String.pipe(S.pattern(/^\\d{4}-\\d{2}-\\d{2}$/))";
+                    return 'S.String.pipe(S.pattern(/^\\d{4}-(?:0[1-9]|1[0-2])-(?:[0-2]\\d|3[01])$/), S.filter(value => (new Date(value + "T00:00:00Z").toJSON() || "").slice(0, 10) === value))';
                 if (_transformedStringType.kind === "time")
-                    return "S.String.pipe(S.pattern(/^\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$/))";
+                    return "S.String.pipe(S.pattern(/^(?:[01]\\d|2[0-3]):[0-5]\\d:(?:[0-5]\\d|60)(?:\\.\\d+)?(?:Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d)$/i))";
                 if (_transformedStringType.kind === "date-time")
-                    return "S.String.pipe(S.pattern(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$/))";
+                    return 'S.String.pipe(S.pattern(/^\\d{4}-(?:0[1-9]|1[0-2])-(?:[0-2]\\d|3[01])T(?:[01]\\d|2[0-3]):[0-5]\\d:(?:[0-5]\\d|60)(?:\\.\\d+)?(?:Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d)$/i), S.filter(value => (new Date(value.slice(0, 10) + "T00:00:00Z").toJSON() || "").slice(0, 10) === value.slice(0, 10)))';
                 if (_transformedStringType.kind === "integer-string")
                     return coerceStrings
                         ? "S.NumberFromString.pipe(S.int())"
