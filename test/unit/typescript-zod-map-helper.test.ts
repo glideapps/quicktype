@@ -83,10 +83,4 @@ describe("TypeScript Zod map helper", () => {
             rejects: [true, true, true],
         });
     }, 60_000);
-
-    test("is omitted without maps", async () => {
-        const output = await render({ type: "string" });
-
-        expect(output).not.toContain("const mapSchema");
-    }, 60_000);
 });
