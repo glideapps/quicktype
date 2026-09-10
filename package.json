@@ -88,7 +88,7 @@
         "tree-sitter-typescript": "^0.23.2",
         "tsx": "^4.23.1",
         "typescript": "~7.0.2",
-        "vitest": "^4.1.10",
+        "vitest": "^4.1.11",
         "watch": "^1.0.2",
         "web-tree-sitter": "^0.26.9"
     },
