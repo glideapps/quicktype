@@ -1,26 +1,53 @@
-import { ConvenienceRenderer } from "../../ConvenienceRenderer.js";
-import { type Namer, funPrefixNamer } from "../../Naming.js";
+import {
+    ConvenienceRenderer,
+    type ForbiddenWordsInfo,
+} from "../../ConvenienceRenderer.js";
+import type { Name, Namer } from "../../Naming.js";
+import type { ClassType, EnumType, UnionType } from "../../Type/index.js";
 
-// A placeholder name style until Step 2 wires up the real Gleam namers.
-const placeholderNamer = funPrefixNamer("placeholder", (original: string) =>
-    original.replace(/[^A-Za-z0-9_]/g, "_"),
-);
+import { forbiddenModuleNames, keywords } from "./constants.js";
+import { pascalNamingFunction, snakeNamingFunction } from "./utils.js";
 
 export class GleamRenderer extends ConvenienceRenderer {
     protected makeNamedTypeNamer(): Namer {
-        return placeholderNamer;
+        return pascalNamingFunction;
     }
 
     protected namerForObjectProperty(): Namer | null {
-        return placeholderNamer;
+        return snakeNamingFunction;
     }
 
     protected makeUnionMemberNamer(): Namer | null {
-        return placeholderNamer;
+        return pascalNamingFunction;
     }
 
     protected makeEnumCaseNamer(): Namer | null {
-        return placeholderNamer;
+        return pascalNamingFunction;
+    }
+
+    protected forbiddenNamesForGlobalNamespace(): readonly string[] {
+        return [...keywords, ...forbiddenModuleNames];
+    }
+
+    protected forbiddenForObjectProperties(
+        _c: ClassType,
+        _className: Name,
+    ): ForbiddenWordsInfo {
+        return { names: [], includeGlobalForbidden: true };
+    }
+
+    protected forbiddenForUnionMembers(
+        _u: UnionType,
+        _unionName: Name,
+    ): ForbiddenWordsInfo {
+        return { names: [], includeGlobalForbidden: true };
+    }
+
+    protected forbiddenForEnumCases(
+        _e: EnumType,
+        _enumName: Name,
+    ): ForbiddenWordsInfo {
+        return { names: [], includeGlobalForbidden: true };
     }
 
     protected get commentLineStart(): string {
