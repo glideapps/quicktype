@@ -3,8 +3,6 @@ import {
     type ForbiddenWordsInfo,
 } from "../../ConvenienceRenderer.js";
 import { DependencyName, type Name, type Namer } from "../../Naming.js";
-import type { RenderContext } from "../../Renderer.js";
-import type { TargetLanguage } from "../../TargetLanguage.js";
 import {
     matchType,
     nullableFromUnion,
@@ -28,13 +26,13 @@ import {
     MAX_WIDTH,
     call,
     flat,
-    hugCall,
     isCollection,
     lambda,
     list,
     render,
     seq,
     text,
+    trailingSlack,
     tuple,
 } from "./pretty.js";
 import {
@@ -59,12 +57,7 @@ export class GleamRenderer extends ConvenienceRenderer {
 
     private _needsDict = false;
 
-    public constructor(
-        targetLanguage: TargetLanguage,
-        renderContext: RenderContext,
-    ) {
-        super(targetLanguage, renderContext);
-    }
+    private _needsInt = false;
 
     protected makeNamedTypeNamer(): Namer {
         return pascalNamingFunction;
@@ -186,13 +179,21 @@ export class GleamRenderer extends ConvenienceRenderer {
     }
 
     private encoderName(t: Type): string {
+        return this.nameToString(this.functionsForType(t).encoder);
+    }
+
+    private decoderName(t: Type): string {
+        return this.nameToString(this.functionsForType(t).decoder);
+    }
+
+    private functionsForType(t: Type): NamedTypeFunctions {
         const name = this.nameForNamedType(t);
         const functions = this._namedTypeFunctions.get(name);
         if (functions === undefined) {
             throw new Error(`No conversion functions for type ${name}`);
         }
 
-        return this.nameToString(functions.encoder);
+        return functions;
     }
 
     // Manual, absolute-column line emission. The renderer keeps its own
@@ -427,6 +428,86 @@ export class GleamRenderer extends ConvenienceRenderer {
         return this.encodeDoc(t, value);
     }
 
+    // A `decode.Decoder(T)` value for `t`.
+    private decoderDoc(t: Type): Doc {
+        return matchType<Doc>(
+            t,
+            (_anyType) => call("json_value_decoder", []),
+            (_nullType) => call("decode.success", [text("Nil")]),
+            (_boolType) => text("decode.bool"),
+            (_integerType) => text("decode.int"),
+            // On Erlang `decode.float` rejects an integral JSON number, so a
+            // `number` field must accept an int and widen it.
+            (_doubleType) =>
+                call("decode.one_of", [
+                    text("decode.float"),
+                    list([
+                        call("decode.map", [
+                            text("decode.int"),
+                            text("int.to_float"),
+                        ]),
+                    ]),
+                ]),
+            (_stringType) => text("decode.string"),
+            (arrayType) =>
+                call("decode.list", [this.decoderDoc(arrayType.items)]),
+            (classType) => call(this.decoderName(classType), []),
+            (mapType) =>
+                call("decode.dict", [
+                    text("decode.string"),
+                    this.decoderDoc(mapType.values),
+                ]),
+            (enumType) => call(this.decoderName(enumType), []),
+            (unionType) => {
+                const nullable = nullableFromUnion(unionType);
+                if (nullable !== null) {
+                    return call("decode.optional", [this.decoderDoc(nullable)]);
+                }
+
+                const [hasNull] = removeNullFromUnion(unionType);
+                if (hasNull !== null) {
+                    return call("decode.optional", [
+                        call(this.decoderName(unionType), []),
+                    ]);
+                }
+
+                return call(this.decoderName(unionType), []);
+            },
+        );
+    }
+
+    // The non-null decoder for a property's inner type (the value inside its
+    // `Option`).
+    private decoderInner(t: Type): Doc {
+        if (t instanceof UnionType) {
+            const nullable = nullableFromUnion(t);
+            if (nullable !== null) {
+                return this.decoderDoc(nullable);
+            }
+
+            return call(this.decoderName(t), []);
+        }
+
+        return this.decoderDoc(t);
+    }
+
+    // Emit a `use <binding> <- <call>` line, breaking the call in place when
+    // it overflows (its arguments break; the `use ... <-` prefix stays put).
+    private emitUse(indent: number, binding: string, callDoc: Doc): void {
+        const prefix = binding === "" ? "use <- " : `use ${binding} <- `;
+        const flatLine = `${prefix}${flat(callDoc)}`;
+        if (indent + flatLine.length <= MAX_WIDTH + trailingSlack(callDoc)) {
+            this.line(indent, flatLine);
+            return;
+        }
+
+        const rendered = render(callDoc, indent, indent + prefix.length);
+        const full = `${" ".repeat(indent)}${prefix}${rendered.text}`;
+        for (const physicalLine of full.split("\n")) {
+            this.emitLine(physicalLine);
+        }
+    }
+
     private emitClassType(c: ClassType, className: Name): void {
         const name = this.nameToString(className);
         if (c.getProperties().size === 0) {
@@ -527,7 +608,7 @@ export class GleamRenderer extends ConvenienceRenderer {
 
         this.emitFnHeader(encoder, typeName, "json.Json");
         if (optional.length === 0) {
-            this.emitDoc(2, hugCall("json.object", list(required)));
+            this.emitDoc(2, call("json.object", [list(required)]));
         } else {
             this.emitBinding(2, "let fields", "=", list(required));
             for (const { jsonName, name, type } of optional) {
@@ -646,6 +727,173 @@ export class GleamRenderer extends ConvenienceRenderer {
         this.line(0, "}");
     }
 
+    // Emit a `pub fn name() -> decode.Decoder(Type) {` header, breaking the
+    // return type when the one-line form exceeds 80 columns.
+    private emitDecoderHeader(fnName: string, typeName: string): void {
+        const signature = `pub fn ${fnName}() -> decode.Decoder(${typeName})`;
+        if (signature.length <= MAX_WIDTH) {
+            this.line(0, `${signature} {`);
+            return;
+        }
+
+        this.line(0, `pub fn ${fnName}() -> decode.Decoder(`);
+        this.line(2, `${typeName},`);
+        this.line(0, ") {");
+    }
+
+    private emitClassDecoder(c: ClassType, className: Name): void {
+        const typeName = this.nameToString(className);
+        this.emitDecoderHeader(this.decoderName(c), typeName);
+        // Rule 1: every decoder opens with `decode.recursive`. Omitting it on a
+        // decoder that reaches itself compiles clean, then hangs forever at
+        // construction time. Applying it uniformly is harmless and safe.
+        this.line(2, "use <- decode.recursive");
+
+        const fields: Doc[] = [];
+        this.forEachClassProperty(c, "none", (name, jsonName, p) => {
+            const binding = this.nameToString(name);
+            const key = `"${gleamStringEscape(jsonName)}"`;
+            if (this.isGleamOptional(p.type, p.isOptional)) {
+                // Rule 2: a field that may be absent *or* null needs both
+                // `optional_field` (missing key) and `optional` (null value).
+                this.emitUse(
+                    2,
+                    binding,
+                    call("decode.optional_field", [
+                        text(key),
+                        text("option.None"),
+                        call("decode.optional", [this.decoderInner(p.type)]),
+                    ]),
+                );
+            } else {
+                this.emitUse(
+                    2,
+                    binding,
+                    call("decode.field", [text(key), this.decoderDoc(p.type)]),
+                );
+            }
+
+            fields.push(text(`${binding}: ${binding}`));
+        });
+
+        const constructed =
+            fields.length === 0 ? text(typeName) : call(typeName, fields);
+        this.emitDoc(2, call("decode.success", [constructed]));
+        this.line(0, "}");
+    }
+
+    private emitEnumDecoder(e: EnumType, enumName: Name): void {
+        const typeName = this.nameToString(enumName);
+        this.emitDecoderHeader(this.decoderName(e), typeName);
+        this.line(2, "use <- decode.recursive");
+        this.emitUse(
+            2,
+            "variant",
+            call("decode.then", [text("decode.string")]),
+        );
+
+        const cases: Array<{ jsonName: string; name: Name }> = [];
+        this.forEachEnumCase(e, "none", (name, jsonName) => {
+            cases.push({ jsonName, name });
+        });
+
+        this.line(2, "case variant {");
+        for (const { jsonName, name } of cases) {
+            this.emitBinding(
+                4,
+                `"${gleamStringEscape(jsonName)}"`,
+                "->",
+                call("decode.success", [text(this.nameToString(name))]),
+            );
+        }
+
+        const placeholder = this.nameToString(cases[0].name);
+        this.emitBinding(
+            4,
+            "_",
+            "->",
+            call("decode.failure", [text(placeholder), text(`"${typeName}"`)]),
+        );
+        this.line(2, "}");
+        this.line(0, "}");
+    }
+
+    private emitUnionDecoder(u: UnionType, unionName: Name): void {
+        const typeName = this.nameToString(unionName);
+        const [, nonNulls] = removeNullFromUnion(u);
+        this.emitDecoderHeader(this.decoderName(u), typeName);
+        this.line(2, "use <- decode.recursive");
+
+        const members: Doc[] = [];
+        let anyMember: Doc | undefined;
+        this.forEachUnionMember(u, nonNulls, "none", null, (memberName, t) => {
+            const variant = call("decode.map", [
+                this.decoderDoc(t),
+                text(this.nameToString(memberName)),
+            ]);
+            // Rule 3: `JsonValue` matches every input, so its variant must come
+            // last or it would shadow the others.
+            if (t.kind === "any") {
+                anyMember = variant;
+            } else {
+                members.push(variant);
+            }
+        });
+
+        if (anyMember !== undefined) {
+            members.push(anyMember);
+        }
+
+        this.emitOneOf(members);
+        this.line(0, "}");
+    }
+
+    private emitOneOf(members: Doc[]): void {
+        this.emitDoc(
+            2,
+            call("decode.one_of", [members[0], list(members.slice(1))]),
+        );
+    }
+
+    private emitTopLevelDecoder(t: Type, name: Name): void {
+        const functions = this._topLevelFunctions.get(name);
+        if (functions === undefined) {
+            return;
+        }
+
+        this.emitDecoderHeader(
+            this.nameToString(functions.decoder),
+            this.nameToString(name),
+        );
+        this.line(2, "use <- decode.recursive");
+        this.emitDoc(2, this.decoderDoc(t));
+        this.line(0, "}");
+    }
+
+    private emitJsonValueDecoder(): void {
+        this.emitDecoderHeader("json_value_decoder", "JsonValue");
+        this.line(2, "use <- decode.recursive");
+        this.emitOneOf([
+            call("decode.map", [text("decode.bool"), text("JsonBool")]),
+            call("decode.map", [text("decode.int"), text("JsonInt")]),
+            call("decode.map", [text("decode.float"), text("JsonFloat")]),
+            call("decode.map", [text("decode.string"), text("JsonString")]),
+            call("decode.map", [
+                call("decode.list", [call("json_value_decoder", [])]),
+                text("JsonArray"),
+            ]),
+            call("decode.map", [
+                call("decode.dict", [
+                    text("decode.string"),
+                    call("json_value_decoder", []),
+                ]),
+                text("JsonObject"),
+            ]),
+            call("decode.success", [text("JsonNull")]),
+        ]);
+        this.line(0, "}");
+    }
+
     private computeNeeds(): void {
         for (const t of this.typeGraph.allTypesUnordered()) {
             if (t.kind === "any") {
@@ -674,6 +922,11 @@ export class GleamRenderer extends ConvenienceRenderer {
             if (t.kind === "map") {
                 this._needsDict = true;
             }
+
+            // The `number` decoder widens an int with `int.to_float`.
+            if (t.kind === "double") {
+                this._needsInt = true;
+            }
         }
 
         // The `JsonObject` variant of `JsonValue` carries a `Dict`.
@@ -700,6 +953,11 @@ export class GleamRenderer extends ConvenienceRenderer {
         // Imports must be sorted for `gleam format`.
         if (this._needsDict) {
             this.line(0, "import gleam/dict");
+        }
+
+        this.line(0, "import gleam/dynamic/decode");
+        if (this._needsInt) {
+            this.line(0, "import gleam/int");
         }
 
         this.line(0, "import gleam/json");
@@ -755,6 +1013,32 @@ export class GleamRenderer extends ConvenienceRenderer {
             (t, name) => {
                 this.line(0);
                 this.emitTopLevelEncoder(t, name);
+            },
+            (t) => this.namedTypeToNameForTopLevel(t) === undefined,
+        );
+
+        if (this._needsJsonValue) {
+            this.line(0);
+            this.emitJsonValueDecoder();
+        }
+
+        this.forEachObject("none", (c: ClassType, name) => {
+            this.line(0);
+            this.emitClassDecoder(c, name);
+        });
+        this.forEachEnum("none", (e, name) => {
+            this.line(0);
+            this.emitEnumDecoder(e, name);
+        });
+        this.forEachUnion("none", (u, name) => {
+            this.line(0);
+            this.emitUnionDecoder(u, name);
+        });
+        this.forEachTopLevel(
+            "none",
+            (t, name) => {
+                this.line(0);
+                this.emitTopLevelDecoder(t, name);
             },
             (t) => this.namedTypeToNameForTopLevel(t) === undefined,
         );

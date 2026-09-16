@@ -3,11 +3,13 @@
 // the formatter byte-for-byte is required: the fixture pipeline runs
 // `gleam format --check src/` on generated output.
 //
-// The formatter targets an 80-column line and indents in two-space steps. A
-// "group" (a call, list, tuple, or record constructor) renders on one line if
-// its flat form fits from the current column; otherwise it breaks, placing one
-// element per line indented two spaces past the group's own line, with a
-// trailing comma after every element except a list spread (`..rest`).
+// The formatter targets an 80-column line and indents in two-space steps. When
+// a call, list, tuple, or constructor does not fit on one line it breaks. If
+// its *last* argument is itself "huggable" — a collection, a lambda, or a
+// nested call — the earlier arguments and that argument's opening delimiter
+// stay on the line and only the trailing argument's body breaks (`json.object([`,
+// `decode.success(Big(`, `json.array(v, fn(v) {`). Otherwise every argument
+// moves to its own line, each with a trailing comma.
 
 export const MAX_WIDTH = 80;
 const INDENT = 2;
@@ -16,7 +18,6 @@ export type Doc =
     | { kind: "text"; text: string }
     | { kind: "seq"; parts: Doc[] }
     | { kind: "call"; head: string; args: Doc[] }
-    | { kind: "hug"; head: string; collection: Doc }
     | { kind: "lambda"; param: string; body: Doc }
     | { kind: "list"; items: Doc[]; spread: Doc | null }
     | { kind: "tuple"; items: Doc[] };
@@ -31,13 +32,6 @@ export function seq(...parts: Doc[]): Doc {
 
 export function call(head: string, args: Doc[]): Doc {
     return { kind: "call", head, args };
-}
-
-// A call whose sole argument is a collection literal. `gleam format` keeps the
-// opening delimiter on the call's line (`json.object([`) rather than indenting
-// the collection as a separate argument.
-export function hugCall(head: string, collection: Doc): Doc {
-    return { kind: "hug", head, collection };
 }
 
 export function lambda(param: string, body: Doc): Doc {
@@ -56,6 +50,18 @@ export function isCollection(doc: Doc): boolean {
     return doc.kind === "list" || doc.kind === "tuple";
 }
 
+// Whether `gleam format` keeps this document attached to the opening line of
+// an enclosing call when that call breaks. Collections and lambdas always hug;
+// a nested call hugs only when it is a constructor application (a capitalized
+// head such as `Big(` or `FooString(`), not a plain function call.
+function isHuggable(doc: Doc): boolean {
+    if (doc.kind === "list" || doc.kind === "tuple" || doc.kind === "lambda") {
+        return true;
+    }
+
+    return doc.kind === "call" && /^[A-Z]/.test(doc.head);
+}
+
 function pad(n: number): string {
     return " ".repeat(n);
 }
@@ -68,8 +74,6 @@ export function flat(doc: Doc): string {
             return doc.parts.map(flat).join("");
         case "call":
             return `${doc.head}(${doc.args.map(flat).join(", ")})`;
-        case "hug":
-            return `${doc.head}(${flat(doc.collection)})`;
         case "lambda":
             return `fn(${doc.param}) { ${flat(doc.body)} }`;
         case "tuple":
@@ -90,30 +94,40 @@ interface Rendered {
     text: string;
 }
 
-function endsWithLambda(doc: Doc): boolean {
-    if (doc.kind === "lambda") {
-        return true;
-    }
-
-    if (doc.kind === "call" && doc.args.length > 0) {
-        return doc.args[doc.args.length - 1].kind === "lambda";
-    }
-
-    return false;
-}
-
-// A trailing lambda ends the flat form with a ` }` block-closer that
-// `gleam format` treats as "free": such a construct stays on one line at up to
+// A call whose last argument is huggable can break by hugging that argument,
+// which moves its closing delimiter onto a continuation line. `gleam format`
+// treats that delimiter as "free", so such a call stays on one line at up to
 // one column past the normal limit before it breaks.
 export function trailingSlack(doc: Doc): number {
-    return endsWithLambda(doc) ? 1 : 0;
+    if (doc.kind === "call" && doc.args.length > 0) {
+        return isHuggable(doc.args[doc.args.length - 1]) ? 1 : 0;
+    }
+
+    return 0;
 }
 
 function fits(doc: Doc, column: number): boolean {
     return column + flat(doc).length <= MAX_WIDTH + trailingSlack(doc);
 }
 
-// Break a list or tuple onto multiple lines. Items sit at `indent + INDENT`;
+// The opening delimiter of a huggable document — what appears on the enclosing
+// line when the document hugs.
+function openToken(doc: Doc): string {
+    switch (doc.kind) {
+        case "list":
+            return "[";
+        case "tuple":
+            return "#(";
+        case "lambda":
+            return `fn(${doc.param}) {`;
+        case "call":
+            return `${doc.head}(`;
+        default:
+            return "";
+    }
+}
+
+// Render a list or tuple broken across lines. Items sit at `indent + INDENT`;
 // the closing delimiter returns to `indent`.
 function renderBrokenItems(
     items: Doc[],
@@ -133,6 +147,56 @@ function renderBrokenItems(
     }
 
     out += `${pad(indent)}${close}`;
+    return out;
+}
+
+// Force `doc` into its broken (multi-line) form. `column` is where the opening
+// delimiter sits, needed only for a nested call's own hug decision.
+function renderBroken(doc: Doc, indent: number, column: number): string {
+    switch (doc.kind) {
+        case "list":
+            return renderBrokenItems(doc.items, doc.spread, indent, "[", "]");
+        case "tuple":
+            return renderBrokenItems(doc.items, null, indent, "#(", ")");
+        case "lambda": {
+            const bodyIndent = indent + INDENT;
+            const body = render(doc.body, bodyIndent, bodyIndent).text;
+            return `fn(${doc.param}) {\n${pad(bodyIndent)}${body}\n${pad(indent)}}`;
+        }
+        case "call":
+            return renderCallBroken(doc, indent, column);
+        default:
+            return render(doc, indent, column).text;
+    }
+}
+
+function renderCallBroken(
+    doc: Doc & { kind: "call" },
+    indent: number,
+    column: number,
+): string {
+    const lastArg = doc.args[doc.args.length - 1];
+    if (lastArg !== undefined && isHuggable(lastArg)) {
+        const leading = doc.args.slice(0, -1).map(flat);
+        const prefix = `${doc.head}(${leading.length > 0 ? `${leading.join(", ")}, ` : ""}`;
+        // Hug only when the leading arguments and the trailing argument's
+        // opening delimiter fit on the line; otherwise every argument breaks.
+        // The hug frees the trailing closer, so one column of slack applies.
+        if (
+            column + prefix.length + openToken(lastArg).length <=
+            MAX_WIDTH + 1
+        ) {
+            return `${prefix}${renderBroken(lastArg, indent, column + prefix.length)})`;
+        }
+    }
+
+    const childIndent = indent + INDENT;
+    let out = `${doc.head}(\n`;
+    for (const arg of doc.args) {
+        out += `${pad(childIndent)}${render(arg, childIndent, childIndent).text},\n`;
+    }
+
+    out += `${pad(indent)})`;
     return out;
 }
 
@@ -157,84 +221,13 @@ export function render(doc: Doc, indent: number, column: number): Rendered {
                 return { text: flatText, endColumn: column + flatText.length };
             }
 
-            // When the final argument is a lambda, `gleam format` keeps the
-            // whole argument list (and the lambda's `fn(..) {`) on the opening
-            // line and breaks only the lambda body.
-            const lastArg = doc.args[doc.args.length - 1];
-            if (lastArg !== undefined && lastArg.kind === "lambda") {
-                const leading = doc.args.slice(0, -1).map(flat);
-                const header = [...leading, `fn(${lastArg.param}) {`].join(
-                    ", ",
-                );
-                const bodyIndent = indent + INDENT;
-                const body = render(lastArg.body, bodyIndent, bodyIndent).text;
-                const out = `${doc.head}(${header}\n${pad(bodyIndent)}${body}\n${pad(indent)}})`;
-                return { text: out, endColumn: indent + 2 };
-            }
-
-            const childIndent = indent + INDENT;
-            let out = `${doc.head}(\n`;
-            for (const arg of doc.args) {
-                out += `${pad(childIndent)}${render(arg, childIndent, childIndent).text},\n`;
-            }
-
-            out += `${pad(indent)})`;
-            return { text: out, endColumn: indent + 1 };
-        }
-        case "lambda": {
-            if (fits(doc, column)) {
-                const flatText = flat(doc);
-                return { text: flatText, endColumn: column + flatText.length };
-            }
-
-            const bodyIndent = indent + INDENT;
-            const body = render(doc.body, bodyIndent, bodyIndent).text;
             return {
-                text: `fn(${doc.param}) {\n${pad(bodyIndent)}${body}\n${pad(indent)}}`,
-                endColumn: indent + 1,
+                text: renderCallBroken(doc, indent, column),
+                endColumn: indent + 2,
             };
         }
-        case "hug": {
-            if (fits(doc, column)) {
-                const flatText = flat(doc);
-                return { text: flatText, endColumn: column + flatText.length };
-            }
-
-            const collection = doc.collection;
-            const inner =
-                collection.kind === "list"
-                    ? renderBrokenItems(
-                          collection.items,
-                          collection.spread,
-                          indent,
-                          "[",
-                          "]",
-                      )
-                    : collection.kind === "tuple"
-                      ? renderBrokenItems(
-                            collection.items,
-                            null,
-                            indent,
-                            "#(",
-                            ")",
-                        )
-                      : render(collection, indent, column).text;
-            return {
-                text: `${doc.head}(${inner})`,
-                endColumn: indent + 1,
-            };
-        }
-        case "tuple": {
-            if (fits(doc, column)) {
-                const flatText = flat(doc);
-                return { text: flatText, endColumn: column + flatText.length };
-            }
-
-            return {
-                text: renderBrokenItems(doc.items, null, indent, "#(", ")"),
-                endColumn: indent + 1,
-            };
-        }
+        case "lambda":
+        case "tuple":
         case "list": {
             if (fits(doc, column)) {
                 const flatText = flat(doc);
@@ -242,13 +235,7 @@ export function render(doc: Doc, indent: number, column: number): Rendered {
             }
 
             return {
-                text: renderBrokenItems(
-                    doc.items,
-                    doc.spread,
-                    indent,
-                    "[",
-                    "]",
-                ),
+                text: renderBroken(doc, indent, column),
                 endColumn: indent + 1,
             };
         }
