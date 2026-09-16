@@ -7,6 +7,7 @@ import { CrystalTargetLanguage } from "./Crystal/index.js";
 import { DartTargetLanguage } from "./Dart/index.js";
 import { ElixirTargetLanguage } from "./Elixir/index.js";
 import { ElmTargetLanguage } from "./Elm/index.js";
+import { GleamTargetLanguage } from "./Gleam/index.js";
 import { GoTargetLanguage } from "./Golang/index.js";
 import { HaskellTargetLanguage } from "./Haskell/index.js";
 import { JSONSchemaTargetLanguage } from "./JSONSchema/index.js";
@@ -44,6 +45,7 @@ export const all = [
     new ElixirTargetLanguage(),
     new ElmTargetLanguage(),
     new FlowTargetLanguage(),
+    new GleamTargetLanguage(),
     new GoTargetLanguage(),
     new HaskellTargetLanguage(),
     new JavaTargetLanguage(),
