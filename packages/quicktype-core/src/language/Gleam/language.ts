@@ -22,6 +22,17 @@ export class GleamTargetLanguage extends TargetLanguage<
         return null;
     }
 
+    public get supportsOptionalClassProperties(): boolean {
+        return true;
+    }
+
+    // On Erlang, `decode.int` and `decode.float` are disjoint, so a
+    // number union decodes both without the integer-before-number hazard
+    // that bites renderers sharing one numeric decoder.
+    public get supportsUnionsWithBothNumberTypes(): boolean {
+        return true;
+    }
+
     protected makeRenderer(renderContext: RenderContext): GleamRenderer {
         return new GleamRenderer(this, renderContext);
     }

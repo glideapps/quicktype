@@ -38,3 +38,41 @@ export const forbiddenModuleNames = [
     "json",
     "option",
 ] as const;
+
+// Gleam prelude types and value constructors are always in scope. A generated
+// type, constructor, or field named after one of these would shadow the
+// prelude, breaking `List(...)`, `json.int`, `option.Some`, and friends.
+export const preludeNames = [
+    "BitArray",
+    "Bool",
+    "Float",
+    "Int",
+    "List",
+    "Nil",
+    "Result",
+    "String",
+    "UtfCodepoint",
+    "Dynamic",
+    "Ok",
+    "Error",
+    "True",
+    "False",
+    "Some",
+    "None",
+] as const;
+
+// Fixed identifiers the renderer emits for the `any` type: the `JsonValue`
+// custom type, its constructors, and its conversion functions. User type and
+// function names must avoid these so the hand-written definitions win.
+export const jsonValueNames = [
+    "JsonValue",
+    "JsonNull",
+    "JsonBool",
+    "JsonInt",
+    "JsonFloat",
+    "JsonString",
+    "JsonArray",
+    "JsonObject",
+    "json_value_to_json",
+    "json_value_decoder",
+] as const;

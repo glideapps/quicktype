@@ -22,12 +22,17 @@ function isAsciiLetterOrUnderscoreOrDigit(codePoint: number): boolean {
     return isLetterOrUnderscoreOrDigit(codePoint);
 }
 
-function isAsciiLetterOrUnderscore(codePoint: number): boolean {
+// Gleam identifiers must begin with a letter — a leading underscore marks a
+// discard and is not valid for a type, constructor, field, or function name.
+// So, unlike most targets, underscore is excluded from the start-character
+// set, forcing `combineWords` to prepend "the" when a name would otherwise
+// start with a digit or underscore.
+function isAsciiLetter(codePoint: number): boolean {
     if (!isAscii(codePoint)) {
         return false;
     }
 
-    return isLetterOrUnderscore(codePoint);
+    return isLetterOrUnderscore(codePoint) && codePoint !== 0x5f;
 }
 
 const legalizeName = legalizeCharacters(isAsciiLetterOrUnderscoreOrDigit);
@@ -37,7 +42,7 @@ function gleamStyle(original: string, isSnakeCase: boolean): string {
 
     const wordStyle = isSnakeCase ? allLowerWordStyle : firstUpperWordStyle;
 
-    const combined = combineWords(
+    return combineWords(
         words,
         legalizeName,
         wordStyle,
@@ -45,10 +50,8 @@ function gleamStyle(original: string, isSnakeCase: boolean): string {
         wordStyle,
         wordStyle,
         isSnakeCase ? "_" : "",
-        isAsciiLetterOrUnderscore,
+        isAsciiLetter,
     );
-
-    return combined === "_" ? "_underscore" : combined;
 }
 
 // snake_case, for functions, record fields, and local values.
