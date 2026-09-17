@@ -381,22 +381,24 @@ export class GleamRenderer extends ConvenienceRenderer {
         );
     }
 
-    // Whether a class property is represented as `option.Option(_)` in Gleam.
-    // Both absent (optional) and null (nullable) properties collapse to
-    // `Option`.
-    private isGleamOptional(t: Type, isOptional: boolean): boolean {
+    // Whether a type admits a JSON null (a `T | null` union).
+    private isNullableType(t: Type): boolean {
         if (t instanceof UnionType) {
             if (nullableFromUnion(t) !== null) {
                 return true;
             }
 
             const [hasNull] = removeNullFromUnion(t);
-            if (hasNull !== null) {
-                return true;
-            }
+            return hasNull !== null;
         }
 
-        return isOptional;
+        return false;
+    }
+
+    // Whether a class property is represented as `option.Option(_)` in Gleam.
+    // Both absent (optional) and null (nullable) properties map to `Option`.
+    private isGleamOptional(t: Type, isOptional: boolean): boolean {
+        return isOptional || this.isNullableType(t);
     }
 
     // The non-null Gleam type wrapped inside a property's `Option(_)`.
@@ -752,33 +754,62 @@ export class GleamRenderer extends ConvenienceRenderer {
         const fields: Doc[] = [];
         this.forEachClassProperty(c, "none", (name, jsonName, p) => {
             const binding = this.nameToString(name);
-            const key = `"${gleamStringEscape(jsonName)}"`;
-            if (this.isGleamOptional(p.type, p.isOptional)) {
-                // Rule 2: a field that may be absent *or* null needs both
-                // `optional_field` (missing key) and `optional` (null value).
-                this.emitUse(
-                    2,
-                    binding,
-                    call("decode.optional_field", [
-                        text(key),
-                        text("option.None"),
-                        call("decode.optional", [this.decoderInner(p.type)]),
+            const key = text(`"${gleamStringEscape(jsonName)}"`);
+            const nullable = this.isNullableType(p.type);
+            // Absence and null are handled by separate combinators, so a field
+            // that admits only one of them must reject the other:
+            //   - `optional_field` accepts a missing key (default `None`).
+            //   - `optional` accepts a null value (mapping it to `None`).
+            //   - `map(_, Some)` demands a present, non-null value.
+            let decoder: Doc;
+            if (!p.isOptional && !nullable) {
+                decoder = call("decode.field", [key, this.decoderDoc(p.type)]);
+            } else if (!p.isOptional && nullable) {
+                // Required key, nullable value.
+                decoder = call("decode.field", [
+                    key,
+                    call("decode.optional", [this.decoderInner(p.type)]),
+                ]);
+            } else if (p.isOptional && !nullable) {
+                // Optional key, non-null value — reject an explicit null.
+                decoder = call("decode.optional_field", [
+                    key,
+                    text("option.None"),
+                    call("decode.map", [
+                        this.decoderInner(p.type),
+                        text("option.Some"),
                     ]),
-                );
+                ]);
             } else {
-                this.emitUse(
-                    2,
-                    binding,
-                    call("decode.field", [text(key), this.decoderDoc(p.type)]),
-                );
+                // Optional key, nullable value — Rule 2: both combinators.
+                decoder = call("decode.optional_field", [
+                    key,
+                    text("option.None"),
+                    call("decode.optional", [this.decoderInner(p.type)]),
+                ]);
             }
 
+            this.emitUse(2, binding, decoder);
             fields.push(text(`${binding}: ${binding}`));
         });
 
-        const constructed =
-            fields.length === 0 ? text(typeName) : call(typeName, fields);
-        this.emitDoc(2, call("decode.success", [constructed]));
+        if (fields.length === 0) {
+            // A property-less record still models a JSON object, so require one
+            // (rather than `decode.success`, which would accept any value).
+            this.emitDoc(
+                2,
+                call("decode.map", [
+                    call("decode.dict", [
+                        text("decode.string"),
+                        text("decode.dynamic"),
+                    ]),
+                    lambda("_", text(typeName)),
+                ]),
+            );
+        } else {
+            this.emitDoc(2, call("decode.success", [call(typeName, fields)]));
+        }
+
         this.line(0, "}");
     }
 

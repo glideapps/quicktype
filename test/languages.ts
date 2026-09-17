@@ -837,6 +837,58 @@ export const ElmLanguage: Language = {
     sourceFiles: ["src/language/Elm/index.ts"],
 };
 
+export const GleamLanguage: Language = {
+    name: "gleam",
+    base: "test/fixtures/gleam",
+    // The gleam compiler (via its BEAM erlang backend) segfaults
+    // intermittently when many fixture workers compile in parallel; a single
+    // build never crashes. Two mitigations, both required:
+    //   1. Build — not just download — the dependencies up front against the
+    //      committed placeholder src/quicktype.gleam, so each per-sample build
+    //      recompiles only the generated module, not the shared deps.
+    //   2. Serialize the per-sample `gleam build` across workers with a shared
+    //      lock, so no two module compilations ever run at once.
+    setupCommand: "gleam build",
+    compileCommand:
+        "flock /tmp/quicktype-gleam-build.lock gleam build && gleam format --check src/",
+    runCommand(sample: string) {
+        return `gleam run -- "${sample}"`;
+    },
+    diffViaSchema: true,
+    // These inputs name types/fields/enum cases differently on the JSON and
+    // JSON-Schema paths (e.g. `link_type` vs `link_link_type`, enum case
+    // `Leaddatum` vs `Purple`); the generated Gleam is correct either way but
+    // not byte-identical. Every diffViaSchema language skips this class.
+    skipDiffViaSchema: ["bug427.json", "github-events.json", "recursive.json"],
+    allowMissingNull: true,
+    features: ["union", "integer"],
+    output: "src/quicktype.gleam",
+    topLevel: "TopLevel",
+    skipJSON: [
+        // The generated module is enormous and the gleam compiler segfaults
+        // while checking it (reproduces with `gleam check`, even with an
+        // unlimited stack).
+        "keywords.json",
+        "nst-test-suite.json",
+        // The gleam Erlang backend errors on a JSON key containing a literal
+        // tab and emoji ("Strings which contain Emoji..."), emitting invalid
+        // Erlang for an otherwise valid Gleam module.
+        "blns-object.json",
+        // The gleam compiler crashes on this generated module a few percent of
+        // the time even for an isolated `gleam build` (other large modules do
+        // not); the flake is specific to its structure.
+        "nbl-stats.json",
+    ],
+    skipMiscJSON: false,
+    skipSchema: [
+        // ~17k-line generated module; the gleam compiler segfaults checking it.
+        "keyword-unions.schema",
+    ],
+    rendererOptions: {},
+    quickTestRendererOptions: [],
+    sourceFiles: ["src/language/Gleam/index.ts"],
+};
+
 export const SwiftLanguage: Language = {
     name: "swift",
     base: "test/fixtures/swift",
