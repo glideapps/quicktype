@@ -115,6 +115,19 @@ export class GleamRenderer extends ConvenienceRenderer {
         return { names: [], includeGlobalForbidden: true };
     }
 
+    // Unlike `Vec<T>` in Rust, `decode.list(x)` evaluates `x` eagerly, so a
+    // container gives no representational indirection and breaks nothing.
+    protected isImplicitCycleBreaker(_t: Type): boolean {
+        return false;
+    }
+
+    // Only classes and unions get an emitted decoder function that can carry a
+    // `decode.recursive` guard; picking any other type (e.g. an array or map)
+    // would leave a cycle with nowhere to put the guard.
+    protected canBreakCycles(t: Type): boolean {
+        return t instanceof ClassType || t instanceof UnionType;
+    }
+
     // Prefix union constructors with the union name so they read well and stay
     // globally unique (e.g. `FooString`, `FooInteger`).
     protected proposeUnionMemberName(
@@ -750,10 +763,12 @@ export class GleamRenderer extends ConvenienceRenderer {
     private emitClassDecoder(c: ClassType, className: Name): void {
         const typeName = this.nameToString(className);
         this.emitDecoderHeader(this.decoderName(c), typeName);
-        // Rule 1: every decoder opens with `decode.recursive`. Omitting it on a
-        // decoder that reaches itself compiles clean, then hangs forever at
-        // construction time. Applying it uniformly is harmless and safe.
-        this.line(2, "use <- decode.recursive");
+        // Rule 1: a decoder that reaches itself and omits `decode.recursive`
+        // compiles clean, then hangs forever at construction time. The guard
+        // re-runs the body on every decode, so emit it only where needed.
+        if (this.isCycleBreakerType(c)) {
+            this.line(2, "use <- decode.recursive");
+        }
 
         const fields: Doc[] = [];
         this.forEachClassProperty(c, "none", (name, jsonName, p) => {
@@ -820,7 +835,6 @@ export class GleamRenderer extends ConvenienceRenderer {
     private emitEnumDecoder(e: EnumType, enumName: Name): void {
         const typeName = this.nameToString(enumName);
         this.emitDecoderHeader(this.decoderName(e), typeName);
-        this.line(2, "use <- decode.recursive");
         this.emitUse(
             2,
             "variant",
@@ -857,7 +871,9 @@ export class GleamRenderer extends ConvenienceRenderer {
         const typeName = this.nameToString(unionName);
         const [, nonNulls] = removeNullFromUnion(u);
         this.emitDecoderHeader(this.decoderName(u), typeName);
-        this.line(2, "use <- decode.recursive");
+        if (this.isCycleBreakerType(u)) {
+            this.line(2, "use <- decode.recursive");
+        }
 
         const members: Doc[] = [];
         let anyMember: Doc | undefined;
@@ -900,13 +916,18 @@ export class GleamRenderer extends ConvenienceRenderer {
             this.nameToString(functions.decoder),
             this.nameToString(name),
         );
-        this.line(2, "use <- decode.recursive");
+        if (this.isCycleBreakerType(t)) {
+            this.line(2, "use <- decode.recursive");
+        }
         this.emitDoc(2, this.decoderDoc(t));
         this.line(0, "}");
     }
 
     private emitJsonValueDecoder(): void {
         this.emitDecoderHeader("json_value_decoder", "JsonValue");
+        // Always guarded: the JsonArray and JsonObject variants below call
+        // `json_value_decoder()` in eager argument position, so this decoder
+        // is literally self-recursive.
         this.line(2, "use <- decode.recursive");
         this.emitOneOf([
             call("decode.map", [text("decode.bool"), text("JsonBool")]),

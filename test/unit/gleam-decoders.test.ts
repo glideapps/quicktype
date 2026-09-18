@@ -28,33 +28,129 @@ async function gleamFromSchema(schema: string): Promise<string> {
 // Rule 1 (highest severity): a decoder that reaches itself and omits
 // `decode.recursive` compiles clean, then hangs forever at construction time.
 // Fixture tests cannot catch this — the job simply times out — so assert the
-// guard on every generated decoder here.
-test("every Gleam decoder opens with `use <- decode.recursive`", async () => {
-    const output = await gleamFromJSON("Tree", [
-        JSON.stringify({
-            value: 1,
-            label: "root",
-            children: [{ value: 2, label: "leaf", children: [] }],
-        }),
-    ]);
-
+// guarded set exactly here: a missing guard hangs, while a superfluous guard
+// rebuilds the decoder once per decoded value.
+function decoderGuards(output: string): {
+    decoders: string[];
+    guarded: string[];
+} {
     const lines = output.split("\n");
-    const headerIndices = lines
-        .map((line, index) => ({ line, index }))
-        .filter(({ line }) => /^pub fn \w+_decoder\(/.test(line))
-        .map(({ index }) => index);
+    const decoders: string[] = [];
+    const guarded: string[] = [];
+    lines.forEach((line, index) => {
+        const match = /^pub fn (\w+_decoder)\(/.exec(line);
+        if (match === null) {
+            return;
+        }
 
-    expect(headerIndices.length).toBeGreaterThan(0);
-    for (const headerIndex of headerIndices) {
+        decoders.push(match[1]);
         // A header may span multiple lines when its return type is long; the
         // body starts on the line after the one ending in `{`.
-        let bodyIndex = headerIndex;
+        let bodyIndex = index;
         while (!lines[bodyIndex].endsWith("{")) {
             bodyIndex += 1;
         }
 
-        expect(lines[bodyIndex + 1].trim()).toBe("use <- decode.recursive");
-    }
+        if (lines[bodyIndex + 1].trim() === "use <- decode.recursive") {
+            guarded.push(match[1]);
+        }
+    });
+    return { decoders, guarded };
+}
+
+test("a self-recursive class decoder is guarded", async () => {
+    // The recursive field comes first, so without the guard construction
+    // recurses before any other combinator can run.
+    const output = await gleamFromJSON("Tree", [
+        JSON.stringify({
+            children: [{ children: [], value: 2 }],
+            value: 1,
+        }),
+    ]);
+
+    const { decoders, guarded } = decoderGuards(output);
+    expect(decoders).toEqual(["tree_decoder"]);
+    expect(guarded).toEqual(["tree_decoder"]);
+});
+
+test("mutual recursion through a union is guarded", async () => {
+    const output = await gleamFromSchema(
+        JSON.stringify({
+            $ref: "#/definitions/Node",
+            definitions: {
+                Node: {
+                    type: "object",
+                    additionalProperties: false,
+                    properties: { value: { $ref: "#/definitions/Value" } },
+                    required: ["value"],
+                },
+                Value: {
+                    oneOf: [{ $ref: "#/definitions/Node" }, { type: "string" }],
+                },
+            },
+        }),
+    );
+
+    const { decoders, guarded } = decoderGuards(output);
+    expect(decoders).toEqual(["top_level_decoder", "value_decoder"]);
+    // One lazy point per cycle suffices: with the class guarded, calling
+    // `value_decoder()` constructs `top_level_decoder()` in O(1), so the
+    // union decoder needs no guard of its own.
+    expect(guarded).toEqual(["top_level_decoder"]);
+});
+
+test("`json_value_decoder` is always guarded", async () => {
+    const output = await gleamFromSchema(
+        JSON.stringify({ type: ["string", "integer", "array", "object"] }),
+    );
+
+    const { decoders, guarded } = decoderGuards(output);
+    expect(decoders).toEqual(["json_value_decoder", "top_level_decoder"]);
+    expect(guarded).toEqual(["json_value_decoder"]);
+});
+
+test("a flat object emits no `decode.recursive` at all", async () => {
+    const output = await gleamFromJSON("Flat", [
+        JSON.stringify({ a: 1, b: "x" }),
+    ]);
+
+    const { decoders, guarded } = decoderGuards(output);
+    expect(decoders).toEqual(["flat_decoder"]);
+    expect(guarded).toEqual([]);
+    expect(output).not.toContain("decode.recursive");
+});
+
+test("an enum decoder is unguarded", async () => {
+    // The body is a string `case` with literal success/failure arms and no
+    // child decoder, so it cannot re-enter itself.
+    const output = await gleamFromSchema(
+        JSON.stringify({ type: "string", enum: ["hot", "cold"] }),
+    );
+
+    const { decoders, guarded } = decoderGuards(output);
+    expect(decoders).toEqual(["top_level_decoder"]);
+    expect(guarded).toEqual([]);
+});
+
+test("a top-level array alias decoder is unguarded", async () => {
+    const output = await gleamFromSchema(
+        JSON.stringify({
+            type: "array",
+            items: {
+                type: "object",
+                additionalProperties: false,
+                properties: { a: { type: "integer" } },
+                required: ["a"],
+            },
+        }),
+    );
+
+    const { decoders, guarded } = decoderGuards(output);
+    expect(decoders).toEqual([
+        "top_level_element_decoder",
+        "top_level_decoder",
+    ]);
+    expect(guarded).toEqual([]);
 });
 
 // Rule 3: `JsonValue` matches every input, so the variant that decodes to it
