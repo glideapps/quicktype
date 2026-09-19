@@ -340,7 +340,6 @@ export class GleamRenderer extends ConvenienceRenderer {
         );
     }
 
-    // A `fn(a) -> json.Json` value that encodes a `t`.
     private encoderFn(t: Type): Doc {
         return matchType<Doc>(
             t,
@@ -397,7 +396,6 @@ export class GleamRenderer extends ConvenienceRenderer {
         );
     }
 
-    // Whether a type admits a JSON null (a `T | null` union).
     private isNullableType(t: Type): boolean {
         if (t instanceof UnionType) {
             if (nullableFromUnion(t) !== null) {
@@ -411,13 +409,11 @@ export class GleamRenderer extends ConvenienceRenderer {
         return false;
     }
 
-    // Whether a class property is represented as `option.Option(_)` in Gleam.
     // Both absent (optional) and null (nullable) properties map to `Option`.
     private isGleamOptional(t: Type, isOptional: boolean): boolean {
         return isOptional || this.isNullableType(t);
     }
 
-    // The non-null Gleam type wrapped inside a property's `Option(_)`.
     private innerTypeDoc(t: Type): Doc {
         if (t instanceof UnionType) {
             const nullable = nullableFromUnion(t);
@@ -446,7 +442,6 @@ export class GleamRenderer extends ConvenienceRenderer {
         return this.encodeDoc(t, value);
     }
 
-    // A `decode.Decoder(T)` value for `t`.
     private decoderDoc(t: Type): Doc {
         return matchType<Doc>(
             t,
@@ -496,8 +491,6 @@ export class GleamRenderer extends ConvenienceRenderer {
         );
     }
 
-    // The non-null decoder for a property's inner type (the value inside its
-    // `Option`).
     private decoderInner(t: Type): Doc {
         if (t instanceof UnionType) {
             const nullable = nullableFromUnion(t);
