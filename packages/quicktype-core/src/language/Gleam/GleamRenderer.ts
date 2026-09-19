@@ -567,17 +567,18 @@ export class GleamRenderer extends ConvenienceRenderer {
         fnName: string,
         paramType: string,
         returnType: string,
+        paramName = "value",
     ): void {
         // `gleam format` measures the signature width without the trailing
         // ` {` block opener.
-        const signature = `pub fn ${fnName}(value: ${paramType}) -> ${returnType}`;
+        const signature = `pub fn ${fnName}(${paramName}: ${paramType}) -> ${returnType}`;
         if (signature.length <= MAX_WIDTH) {
             this.line(0, `${signature} {`);
             return;
         }
 
         this.line(0, `pub fn ${fnName}(`);
-        this.line(2, `value: ${paramType},`);
+        this.line(2, `${paramName}: ${paramType},`);
         this.line(0, `) -> ${returnType} {`);
     }
 
@@ -608,7 +609,10 @@ export class GleamRenderer extends ConvenienceRenderer {
             }
         });
 
-        this.emitFnHeader(encoder, typeName, "json.Json");
+        // A property-less record's encoder ignores its argument.
+        const paramName =
+            required.length === 0 && optional.length === 0 ? "_value" : "value";
+        this.emitFnHeader(encoder, typeName, "json.Json", paramName);
         if (optional.length === 0) {
             this.emitDoc(2, call("json.object", [list(required)]));
         } else {
