@@ -172,7 +172,7 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
     }
 
     public addTypesSync(
-        _ctx: RunContext,
+        ctx: RunContext,
         typeBuilder: TypeBuilder,
         inferMaps: boolean,
         inferEnums: boolean,
@@ -183,6 +183,7 @@ export class JSONInput<T> implements Input<JSONSourceData<T>> {
             typeBuilder,
             inferMaps,
             inferEnums,
+            ctx.conflateNumbersInInference,
         );
 
         for (const [name, { samples, description }] of this._topLevels) {

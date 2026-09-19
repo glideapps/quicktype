@@ -1,0 +1,26 @@
+[
+  {
+    "whole_or_fraction": 123,
+    "number_or_text": 123,
+    "maybe_number": 1,
+    "numbers": [1, 2.5],
+    "fraction": 1.5,
+    "whole": 1
+  },
+  {
+    "whole_or_fraction": 12.3,
+    "number_or_text": "Hello Dolly",
+    "maybe_number": 2.5,
+    "numbers": [3],
+    "fraction": 2.5,
+    "whole": 2
+  },
+  {
+    "whole_or_fraction": 7,
+    "number_or_text": 12.3,
+    "maybe_number": null,
+    "numbers": [],
+    "fraction": 0.5,
+    "whole": 3
+  }
+]
