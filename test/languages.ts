@@ -873,9 +873,12 @@ export const GleamLanguage: Language = {
         // unlimited stack).
         "keywords.json",
         "nst-test-suite.json",
-        // The gleam Erlang backend errors on a JSON key containing a literal
-        // tab and emoji ("Strings which contain Emoji..."), emitting invalid
-        // Erlang for an otherwise valid Gleam module.
+        // A 280-character JSON key becomes a 270-character Gleam identifier,
+        // which the Erlang backend emits as an Erlang variable of the same
+        // length. Erlang's scanner interns variable names as atoms, capped at
+        // 255 characters, so erlc rejects it with "illegal var". `gleam check`
+        // passes; only `gleam build` fails. Reproduces with any key over ~255
+        // characters, independent of its contents.
         "blns-object.json",
         // The gleam compiler crashes on this generated module a few percent of
         // the time even for an isolated `gleam build` (other large modules do
