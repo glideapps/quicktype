@@ -177,3 +177,71 @@ test("the universal `JsonValue` catch-all is emitted last", async () => {
     // closing delimiters of the `one_of`.
     expect(decoder.slice(catchAll)).not.toContain("decode.map");
 });
+
+// Number unions. `Int` and `Float` are distinct Gleam types, so JSON samples
+// that mix whole and fractional numbers infer an `Int | Float` union instead
+// of widening every whole number to a `Float`. Fixture round trips cannot pin
+// this: the comparison parses JSON, so `123` and `123.0` compare equal.
+test("JSON samples mixing whole and fractional numbers infer an Int | Float union", async () => {
+    const output = await gleamFromJSON("Bar", [
+        JSON.stringify([{ foo: 123 }, { foo: 12.3 }]),
+    ]);
+
+    expect(output).toContain(
+        ["pub type Foo {", "  FooDouble(Float)", "  FooInteger(Int)", "}"].join(
+            "\n",
+        ),
+    );
+});
+
+test("a number union alongside another type keeps both number variants", async () => {
+    const output = await gleamFromJSON("Bar", [
+        JSON.stringify([{ foo: 123 }, { foo: "Hello Dolly" }, { foo: 12.3 }]),
+    ]);
+
+    expect(output).toContain(
+        [
+            "pub type Foo {",
+            "  FooDouble(Float)",
+            "  FooInteger(Int)",
+            "  FooString(String)",
+            "}",
+        ].join("\n"),
+    );
+});
+
+// The lenient `number` decoder accepts a whole number, and on the JavaScript
+// target so does `decode.float`, so the `Int` variant must be tried first and
+// the `Float` variant decoded strictly. Ordered the other way, `123` decodes
+// as `FooDouble(123.0)` and `FooInteger` is unreachable.
+test("an Int | Float union tries Int first and decodes Float strictly", async () => {
+    const output = await gleamFromJSON("Bar", [
+        JSON.stringify([{ foo: 123 }, { foo: "Hello Dolly" }, { foo: 12.3 }]),
+    ]);
+
+    expect(output).toContain(
+        [
+            "pub fn foo_decoder() -> decode.Decoder(Foo) {",
+            "  decode.one_of(decode.map(decode.int, FooInteger), [",
+            "    decode.map(decode.float, FooDouble),",
+            "    decode.map(decode.string, FooString),",
+            "  ])",
+            "}",
+        ].join("\n"),
+    );
+    // Nothing widens an int here, so `gleam/int` is not imported.
+    expect(output).not.toContain("int.to_float");
+    expect(output).not.toContain("import gleam/int");
+});
+
+test("a plain Float field keeps the lenient number decoder and its import", async () => {
+    const output = await gleamFromJSON("Bar", [
+        JSON.stringify([{ foo: 1.5 }, { foo: 2.5 }]),
+    ]);
+
+    expect(output).toContain("foo: Float");
+    expect(output).toContain(
+        "decode.one_of(decode.float, [decode.map(decode.int, int.to_float)])",
+    );
+    expect(output).toContain("import gleam/int");
+});
