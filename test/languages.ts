@@ -840,17 +840,19 @@ export const ElmLanguage: Language = {
 export const GleamLanguage: Language = {
     name: "gleam",
     base: "test/fixtures/gleam",
-    // The gleam compiler (via its BEAM erlang backend) segfaults
-    // intermittently when many fixture workers compile in parallel; a single
-    // build never crashes. Two mitigations, both required:
+    // The gleam compiler (via its BEAM erlang backend) segfaults at a low rate
+    // when compiling large generated modules, especially under the fixture's
+    // parallel load. Three mitigations:
     //   1. Build — not just download — the dependencies up front against the
     //      committed placeholder src/quicktype.gleam, so each per-sample build
     //      recompiles only the generated module, not the shared deps.
     //   2. Serialize the per-sample `gleam build` across workers with a shared
     //      lock, so no two module compilations ever run at once.
+    //   3. Retry a crashed build a few times; a fresh compile of the same
+    //      module almost always succeeds.
     setupCommand: "gleam build",
     compileCommand:
-        "flock /tmp/quicktype-gleam-build.lock gleam build && gleam format --check src/",
+        "flock /tmp/quicktype-gleam-build.lock sh -c 'for i in 1 2 3 4 5; do gleam build && exit 0; done; exit 1' && gleam format --check src/",
     runCommand(sample: string) {
         return `gleam run -- "${sample}"`;
     },
