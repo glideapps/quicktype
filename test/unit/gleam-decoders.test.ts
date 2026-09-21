@@ -132,7 +132,7 @@ test("an enum decoder is unguarded", async () => {
     expect(guarded).toEqual([]);
 });
 
-test("a top-level array alias decoder is unguarded", async () => {
+test("a top-level array decoder is unguarded", async () => {
     const output = await gleamFromSchema(
         JSON.stringify({
             type: "array",

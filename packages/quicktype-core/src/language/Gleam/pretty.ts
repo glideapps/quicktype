@@ -200,6 +200,27 @@ function renderCallBroken(
     return out;
 }
 
+// Render a type annotation. `gleam format` breaks a type that does not fit by
+// moving every argument of the outermost constructor onto its own line; unlike
+// an expression, a type never hugs its last argument. As elsewhere in the
+// formatter, the trailing comma of a broken argument does not count toward the
+// 80-column limit.
+export function renderType(doc: Doc, indent: number, column: number): string {
+    const flatText = flat(doc);
+    if (doc.kind !== "call" || column + flatText.length <= MAX_WIDTH) {
+        return flatText;
+    }
+
+    const childIndent = indent + INDENT;
+    let out = `${doc.head}(\n`;
+    for (const arg of doc.args) {
+        out += `${pad(childIndent)}${renderType(arg, childIndent, childIndent)},\n`;
+    }
+
+    out += `${pad(indent)})`;
+    return out;
+}
+
 export function render(doc: Doc, indent: number, column: number): Rendered {
     switch (doc.kind) {
         case "text":

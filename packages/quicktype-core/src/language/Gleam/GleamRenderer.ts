@@ -30,6 +30,7 @@ import {
     lambda,
     list,
     render,
+    renderType,
     seq,
     text,
     trailingSlack,
@@ -159,7 +160,7 @@ export class GleamRenderer extends ConvenienceRenderer {
         topLevelName: Name,
     ): DependencyName[] {
         // Named-type top-levels already have conversion functions from their
-        // named-type dependency names; only aliases need their own.
+        // named-type dependency names; only structural ones need their own.
         if (this.namedTypeToNameForTopLevel(t) !== undefined) {
             return [];
         }
@@ -560,31 +561,29 @@ export class GleamRenderer extends ConvenienceRenderer {
         this.line(0, "}");
     }
 
-    private emitTopLevelAlias(t: Type, name: Name): void {
-        // `gleam format` always places an aliased type on its own line.
-        this.line(0, `pub type ${this.nameToString(name)} =`);
-        this.emitDoc(2, this.typeDoc(t));
-    }
-
     // Emit a `pub fn name(value: Type) -> Return {` header, breaking the
     // parameter list onto its own line when the one-line form exceeds the
     // 80-column limit, exactly as `gleam format` does.
     private emitFnHeader(
         fnName: string,
-        paramType: string,
+        paramType: Doc,
         returnType: string,
         paramName = "value",
     ): void {
         // `gleam format` measures the signature width without the trailing
         // ` {` block opener.
-        const signature = `pub fn ${fnName}(${paramName}: ${paramType}) -> ${returnType}`;
+        const signature = `pub fn ${fnName}(${paramName}: ${flat(paramType)}) -> ${returnType}`;
         if (signature.length <= MAX_WIDTH) {
             this.line(0, `${signature} {`);
             return;
         }
 
+        const prefix = `${paramName}: `;
         this.line(0, `pub fn ${fnName}(`);
-        this.line(2, `${paramName}: ${paramType},`);
+        this.line(
+            2,
+            `${prefix}${renderType(paramType, 2, 2 + prefix.length)},`,
+        );
         this.line(0, `) -> ${returnType} {`);
     }
 
@@ -618,7 +617,7 @@ export class GleamRenderer extends ConvenienceRenderer {
         // A property-less record's encoder ignores its argument.
         const paramName =
             required.length === 0 && optional.length === 0 ? "_value" : "value";
-        this.emitFnHeader(encoder, typeName, "json.Json", paramName);
+        this.emitFnHeader(encoder, text(typeName), "json.Json", paramName);
         if (optional.length === 0) {
             this.emitDoc(2, call("json.object", [list(required)]));
         } else {
@@ -655,7 +654,7 @@ export class GleamRenderer extends ConvenienceRenderer {
     private emitEnumEncoder(e: EnumType, enumName: Name): void {
         const typeName = this.nameToString(enumName);
         const encoder = this.encoderName(e);
-        this.emitFnHeader(encoder, typeName, "json.Json");
+        this.emitFnHeader(encoder, text(typeName), "json.Json");
         this.line(2, "case value {");
         this.forEachEnumCase(e, "none", (caseName, jsonName) => {
             this.emitBinding(
@@ -673,7 +672,7 @@ export class GleamRenderer extends ConvenienceRenderer {
         const typeName = this.nameToString(unionName);
         const encoder = this.encoderName(u);
         const [, nonNulls] = removeNullFromUnion(u);
-        this.emitFnHeader(encoder, typeName, "json.Json");
+        this.emitFnHeader(encoder, text(typeName), "json.Json");
         this.line(2, "case value {");
         this.forEachUnionMember(u, nonNulls, "none", null, (memberName, t) => {
             this.emitBinding(
@@ -687,15 +686,18 @@ export class GleamRenderer extends ConvenienceRenderer {
         this.line(0, "}");
     }
 
+    // A top level that is not a named type — a list, a dict, or a primitive —
+    // has no declaration of its own. Gleam discourages type aliases, so the
+    // conversion functions spell the structural type out in their signatures
+    // instead of hiding it behind `pub type TopLevel = List(Person)`.
     private emitTopLevelEncoder(t: Type, name: Name): void {
         const functions = this._topLevelFunctions.get(name);
         if (functions === undefined) {
             return;
         }
 
-        const typeName = this.nameToString(name);
         const encoder = this.nameToString(functions.encoder);
-        this.emitFnHeader(encoder, typeName, "json.Json");
+        this.emitFnHeader(encoder, this.typeDoc(t), "json.Json");
         this.emitDoc(2, this.encodeDoc(t, text("value")));
         this.line(0, "}");
     }
@@ -713,7 +715,7 @@ export class GleamRenderer extends ConvenienceRenderer {
     }
 
     private emitJsonValueEncoder(): void {
-        this.emitFnHeader("json_value_to_json", "JsonValue", "json.Json");
+        this.emitFnHeader("json_value_to_json", text("JsonValue"), "json.Json");
         this.line(2, "case value {");
         this.line(4, "JsonNull -> json.null()");
         this.line(4, "JsonBool(inner) -> json.bool(inner)");
@@ -741,21 +743,21 @@ export class GleamRenderer extends ConvenienceRenderer {
 
     // Emit a `pub fn name() -> decode.Decoder(Type) {` header, breaking the
     // return type when the one-line form exceeds 80 columns.
-    private emitDecoderHeader(fnName: string, typeName: string): void {
-        const signature = `pub fn ${fnName}() -> decode.Decoder(${typeName})`;
+    private emitDecoderHeader(fnName: string, returnType: Doc): void {
+        const signature = `pub fn ${fnName}() -> decode.Decoder(${flat(returnType)})`;
         if (signature.length <= MAX_WIDTH) {
             this.line(0, `${signature} {`);
             return;
         }
 
         this.line(0, `pub fn ${fnName}() -> decode.Decoder(`);
-        this.line(2, `${typeName},`);
+        this.line(2, `${renderType(returnType, 2, 2)},`);
         this.line(0, ") {");
     }
 
     private emitClassDecoder(c: ClassType, className: Name): void {
         const typeName = this.nameToString(className);
-        this.emitDecoderHeader(this.decoderName(c), typeName);
+        this.emitDecoderHeader(this.decoderName(c), text(typeName));
         // Rule 1: a decoder that reaches itself and omits `decode.recursive`
         // compiles clean, then hangs forever at construction time. The guard
         // re-runs the body on every decode, so emit it only where needed.
@@ -827,7 +829,7 @@ export class GleamRenderer extends ConvenienceRenderer {
 
     private emitEnumDecoder(e: EnumType, enumName: Name): void {
         const typeName = this.nameToString(enumName);
-        this.emitDecoderHeader(this.decoderName(e), typeName);
+        this.emitDecoderHeader(this.decoderName(e), text(typeName));
         this.emitUse(
             2,
             "variant",
@@ -863,7 +865,7 @@ export class GleamRenderer extends ConvenienceRenderer {
     private emitUnionDecoder(u: UnionType, unionName: Name): void {
         const typeName = this.nameToString(unionName);
         const [, nonNulls] = removeNullFromUnion(u);
-        this.emitDecoderHeader(this.decoderName(u), typeName);
+        this.emitDecoderHeader(this.decoderName(u), text(typeName));
         if (this.isCycleBreakerType(u)) {
             this.line(2, "use <- decode.recursive");
         }
@@ -907,7 +909,7 @@ export class GleamRenderer extends ConvenienceRenderer {
 
         this.emitDecoderHeader(
             this.nameToString(functions.decoder),
-            this.nameToString(name),
+            this.typeDoc(t),
         );
         if (this.isCycleBreakerType(t)) {
             this.line(2, "use <- decode.recursive");
@@ -917,7 +919,7 @@ export class GleamRenderer extends ConvenienceRenderer {
     }
 
     private emitJsonValueDecoder(): void {
-        this.emitDecoderHeader("json_value_decoder", "JsonValue");
+        this.emitDecoderHeader("json_value_decoder", text("JsonValue"));
         // Always guarded: the JsonArray and JsonObject variants below call
         // `json_value_decoder()` in eager argument position, so this decoder
         // is literally self-recursive.
@@ -1031,15 +1033,6 @@ export class GleamRenderer extends ConvenienceRenderer {
             this.line(0);
             this.emitUnionType(u, name);
         });
-        this.forEachTopLevel(
-            "none",
-            (t, name) => {
-                this.line(0);
-                this.emitTopLevelAlias(t, name);
-            },
-            (t) => this.namedTypeToNameForTopLevel(t) === undefined,
-        );
-
         if (this._needsJsonValue) {
             this.line(0);
             this.emitJsonValueEncoder();
