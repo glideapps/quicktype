@@ -570,11 +570,10 @@ export class GleamRenderer extends ConvenienceRenderer {
         returnType: string,
         paramName = "value",
     ): void {
-        // `gleam format` measures the signature width without the trailing
-        // ` {` block opener.
-        const signature = `pub fn ${fnName}(${paramName}: ${flat(paramType)}) -> ${returnType}`;
-        if (signature.length <= MAX_WIDTH) {
-            this.line(0, `${signature} {`);
+        // The whole line, trailing ` {` included, must fit in 80 columns.
+        const header = `pub fn ${fnName}(${paramName}: ${flat(paramType)}) -> ${returnType} {`;
+        if (header.length <= MAX_WIDTH) {
+            this.line(0, header);
             return;
         }
 
@@ -742,7 +741,11 @@ export class GleamRenderer extends ConvenienceRenderer {
     }
 
     // Emit a `pub fn name() -> decode.Decoder(Type) {` header, breaking the
-    // return type when the one-line form exceeds 80 columns.
+    // return type when the one-line form is too wide.
+    //
+    // Unlike `emitFnHeader`, the signature without the trailing ` {` is what
+    // must fit in 80 columns: this form stays on one line at 82 columns
+    // including the brace and breaks at 83.
     private emitDecoderHeader(fnName: string, returnType: Doc): void {
         const signature = `pub fn ${fnName}() -> decode.Decoder(${flat(returnType)})`;
         if (signature.length <= MAX_WIDTH) {
@@ -758,7 +761,7 @@ export class GleamRenderer extends ConvenienceRenderer {
     private emitClassDecoder(c: ClassType, className: Name): void {
         const typeName = this.nameToString(className);
         this.emitDecoderHeader(this.decoderName(c), text(typeName));
-        // Rule 1: a decoder that reaches itself and omits `decode.recursive`
+        // A decoder that reaches itself and omits `decode.recursive`
         // compiles clean, then hangs forever at construction time. The guard
         // re-runs the body on every decode, so emit it only where needed.
         if (this.isCycleBreakerType(c)) {
@@ -795,7 +798,8 @@ export class GleamRenderer extends ConvenienceRenderer {
                     ]),
                 ]);
             } else {
-                // Optional key, nullable value — Rule 2: both combinators.
+                // Optional key, nullable value — accept a missing key and a
+                // null.
                 decoder = call("decode.optional_field", [
                     key,
                     text("option.None"),
@@ -877,8 +881,8 @@ export class GleamRenderer extends ConvenienceRenderer {
                 this.decoderDoc(t),
                 text(this.nameToString(memberName)),
             ]);
-            // Rule 3: `JsonValue` matches every input, so its variant must come
-            // last or it would shadow the others.
+            // `JsonValue` matches every input, so its variant must come last
+            // or it would shadow the others.
             if (t.kind === "any") {
                 anyMember = variant;
             } else {

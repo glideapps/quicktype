@@ -106,7 +106,27 @@ export function trailingSlack(doc: Doc): number {
     return 0;
 }
 
+// Whether a document has anything between its delimiters to break on. A call
+// with no arguments, an empty list, and an empty tuple have no break point, so
+// `gleam format` leaves them on one line however far past column 80 they sit.
+function canBreak(doc: Doc): boolean {
+    switch (doc.kind) {
+        case "call":
+            return doc.args.length > 0;
+        case "list":
+            return doc.items.length > 0 || doc.spread !== null;
+        case "tuple":
+            return doc.items.length > 0;
+        default:
+            return true;
+    }
+}
+
 function fits(doc: Doc, column: number): boolean {
+    if (!canBreak(doc)) {
+        return true;
+    }
+
     return column + flat(doc).length <= MAX_WIDTH + trailingSlack(doc);
 }
 
@@ -153,6 +173,10 @@ function renderBrokenItems(
 // Force `doc` into its broken (multi-line) form. `column` is where the opening
 // delimiter sits, needed only for a nested call's own hug decision.
 function renderBroken(doc: Doc, indent: number, column: number): string {
+    if (!canBreak(doc)) {
+        return flat(doc);
+    }
+
     switch (doc.kind) {
         case "list":
             return renderBrokenItems(doc.items, doc.spread, indent, "[", "]");
@@ -207,7 +231,11 @@ function renderCallBroken(
 // 80-column limit.
 export function renderType(doc: Doc, indent: number, column: number): string {
     const flatText = flat(doc);
-    if (doc.kind !== "call" || column + flatText.length <= MAX_WIDTH) {
+    if (
+        doc.kind !== "call" ||
+        !canBreak(doc) ||
+        column + flatText.length <= MAX_WIDTH
+    ) {
         return flatText;
     }
 

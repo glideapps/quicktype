@@ -25,8 +25,8 @@ async function gleamFromSchema(schema: string): Promise<string> {
     return result.lines.join("\n");
 }
 
-// Rule 1 (highest severity): a decoder that reaches itself and omits
-// `decode.recursive` compiles clean, then hangs forever at construction time.
+// A decoder that reaches itself and omits `decode.recursive` compiles clean,
+// then hangs forever at construction time.
 // Fixture tests cannot catch this — the job simply times out — so assert the
 // guarded set exactly here: a missing guard hangs, while a superfluous guard
 // rebuilds the decoder once per decoded value.
@@ -153,8 +153,8 @@ test("a top-level array decoder is unguarded", async () => {
     expect(guarded).toEqual([]);
 });
 
-// Rule 3: `JsonValue` matches every input, so the variant that decodes to it
-// must come last in a `one_of` or it would shadow the others. The bare `any`
+// `JsonValue` matches every input, so the variant that decodes to it must
+// come last in a `one_of` or it would shadow the others. The bare `any`
 // member is absorbed by the type IR, but the same "universal match last"
 // invariant is realized inside `json_value_decoder`, whose `decode.success`
 // catch-all always succeeds and therefore must be the final alternative.
@@ -192,4 +192,20 @@ test("a plain Float field keeps the lenient number decoder and its import", asyn
         "decode.one_of(decode.float, [decode.map(decode.int, int.to_float)])",
     );
     expect(output).toContain("import gleam/int");
+});
+
+// A call with no arguments has nothing to break on, so `gleam format` keeps it
+// on one line however far past column 80 it sits. Splitting `head(` from `)`
+// makes `gleam format --check src/` reject the module. A ~70-character decoder
+// name nested three lists deep is the shortest input that reaches the limit.
+test("a zero-argument call past column 80 stays on one line", async () => {
+    const output = await gleamFromJSON(
+        "AVeryLongTopLevelNameForTestingSignatureWrappingBehaviour",
+        [JSON.stringify([[[{ a: 1 }]]])],
+    );
+
+    expect(output).toContain(
+        "a_very_long_top_level_name_for_testing_signature_wrapping_behaviour_element_decoder(),",
+    );
+    expect(output).not.toMatch(/_decoder\(\n\s*\)/);
 });
