@@ -9,8 +9,10 @@ import {
     removeNullFromUnion,
 } from "../../Type/TypeUtils.js";
 import {
+    ArrayType,
     ClassType,
     type EnumType,
+    MapType,
     type Type,
     UnionType,
 } from "../../Type/index.js";
@@ -876,9 +878,20 @@ export class GleamRenderer extends ConvenienceRenderer {
 
         const members: Doc[] = [];
         let anyMember: Doc | undefined;
+        const hasIntegerVariant = Array.from(nonNulls).some(
+            (t) => t.kind === "integer",
+        );
         this.forEachUnionMember(u, nonNulls, "none", null, (memberName, t) => {
+            // The lenient number decoder accepts integers too, so next to an
+            // integer variant it would shadow that variant whichever order
+            // `one_of` tries them in; the integer variant already covers
+            // integral input, so here the double variant demands a true float.
+            const memberDecoder =
+                hasIntegerVariant && t.kind === "double"
+                    ? text("decode.float")
+                    : this.decoderDoc(t);
             const variant = call("decode.map", [
-                this.decoderDoc(t),
+                memberDecoder,
                 text(this.nameToString(memberName)),
             ]);
             // `JsonValue` matches every input, so its variant must come last
@@ -949,6 +962,36 @@ export class GleamRenderer extends ConvenienceRenderer {
         this.line(0, "}");
     }
 
+    // Whether decoding `t` applies the lenient number decoder (`decode.float`
+    // with an `int.to_float` fallback) to a double child.
+    private hasLenientDouble(t: Type): boolean {
+        if (t instanceof ClassType) {
+            for (const [, p] of t.getProperties()) {
+                if (p.type.kind === "double") {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        if (t instanceof UnionType) {
+            const [, nonNulls] = removeNullFromUnion(t);
+            const kinds = new Set(Array.from(nonNulls).map((m) => m.kind));
+            return kinds.has("double") && !kinds.has("integer");
+        }
+
+        if (t instanceof ArrayType) {
+            return t.items.kind === "double";
+        }
+
+        if (t instanceof MapType) {
+            return t.values.kind === "double";
+        }
+
+        return false;
+    }
+
     private computeNeeds(): void {
         for (const t of this.typeGraph.allTypesUnordered()) {
             if (t.kind === "any") {
@@ -978,7 +1021,16 @@ export class GleamRenderer extends ConvenienceRenderer {
                 this._needsDict = true;
             }
 
-            // The `number` decoder widens an int with `int.to_float`.
+            // The lenient number decoder widens an int with `int.to_float`;
+            // a union double next to an integer variant decodes strictly and
+            // does not need `gleam/int`.
+            if (this.hasLenientDouble(t)) {
+                this._needsInt = true;
+            }
+        }
+
+        // A bare double top level also decodes with the lenient decoder.
+        for (const t of this.topLevels.values()) {
             if (t.kind === "double") {
                 this._needsInt = true;
             }

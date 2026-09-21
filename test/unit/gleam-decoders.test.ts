@@ -194,6 +194,37 @@ test("a plain Float field keeps the lenient number decoder and its import", asyn
     expect(output).toContain("import gleam/int");
 });
 
+test("a union's double variant decodes strictly beside an integer variant", async () => {
+    const output = await gleamFromSchema(
+        JSON.stringify({
+            type: "object",
+            properties: {
+                reading: { oneOf: [{ type: "integer" }, { type: "number" }] },
+                ratio: { type: "number" },
+            },
+            required: ["reading", "ratio"],
+        }),
+    );
+
+    expect(output).toContain("ReadingDouble(Float)");
+    expect(output).toContain("ReadingInteger(Int)");
+
+    // Slice out the union's own decoder: searching the whole module would
+    // match `ratio`'s lenient decoder and pin the wrong thing.
+    const start = output.indexOf("pub fn reading_decoder()");
+    expect(start).toBeGreaterThanOrEqual(0);
+    const decoder = output.slice(start, output.indexOf("\n}", start));
+
+    expect(decoder).toContain("decode.map(decode.float, ReadingDouble)");
+    expect(decoder).not.toContain("int.to_float");
+
+    // `ratio` still widens an int, so the import it needs stays.
+    expect(output).toContain(
+        "decode.one_of(decode.float, [decode.map(decode.int, int.to_float)])",
+    );
+    expect(output).toContain("import gleam/int");
+});
+
 // A call with no arguments has nothing to break on, so `gleam format` keeps it
 // on one line however far past column 80 it sits. Splitting `head(` from `)`
 // makes `gleam format --check src/` reject the module. A ~70-character decoder

@@ -26,9 +26,10 @@ export class GleamTargetLanguage extends TargetLanguage<
         return true;
     }
 
-    // On Erlang, `decode.int` and `decode.float` are disjoint, so a
-    // number union decodes both without the integer-before-number hazard
-    // that bites renderers sharing one numeric decoder.
+    // On Erlang, `decode.int` and `decode.float` are disjoint, and the
+    // union decoder keeps its double variant strict — no `int.to_float`
+    // widening — when an integer variant is present, so neither numeric
+    // variant can swallow the other's values.
     public get supportsUnionsWithBothNumberTypes(): boolean {
         return true;
     }
