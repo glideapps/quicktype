@@ -148,12 +148,6 @@ const defaultOptions: NonInferenceOptions = {
 };
 
 export interface RunContext {
-    /**
-     * Whether JSON inference merges `integer` and `double` into `double`
-     * when samples mix them.  See
-     * `TargetLanguage.infersUnionsWithBothNumberTypes`.
-     */
-    conflateNumbersInInference: boolean;
     debugPrintReconstitution: boolean;
     debugPrintSchemaResolving: boolean;
     debugPrintTransformations: boolean;
@@ -194,14 +188,6 @@ class Run implements RunContext {
         }
 
         return mapping;
-    }
-
-    public get conflateNumbersInInference(): boolean {
-        const targetLanguage = getTargetLanguage(this._options.lang);
-        return !(
-            targetLanguage.supportsUnionsWithBothNumberTypes &&
-            targetLanguage.infersUnionsWithBothNumberTypes
-        );
     }
 
     public get debugPrintReconstitution(): boolean {

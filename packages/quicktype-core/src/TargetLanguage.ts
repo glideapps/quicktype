@@ -111,24 +111,6 @@ export abstract class TargetLanguage<
         return false;
     }
 
-    /**
-     * Whether inference from JSON samples keeps `integer` and `double` as
-     * separate union members when one value position mixes them, so that
-     * `[1, 1.5]` infers `integer | double` instead of `double`.
-     *
-     * Off by default: JSON does not distinguish `1` from `1.0`, and most
-     * languages have a single numeric type that fits both.  A language whose
-     * integer and floating-point types are disjoint at runtime (Gleam's
-     * `Int` and `Float`) opts in so a whole number is not widened to a float.
-     *
-     * Only meaningful together with `supportsUnionsWithBothNumberTypes`;
-     * without it, later rewrites conflate the inferred union back into
-     * `double`.
-     */
-    public get infersUnionsWithBothNumberTypes(): boolean {
-        return false;
-    }
-
     public get supportsFullObjectType(): boolean {
         return false;
     }

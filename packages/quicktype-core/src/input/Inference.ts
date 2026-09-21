@@ -120,7 +120,6 @@ export class TypeInference {
         private readonly _typeBuilder: TypeBuilder,
         private readonly _inferMaps: boolean,
         private readonly _inferEnums: boolean,
-        private readonly _conflateNumbers: boolean,
     ) {}
 
     private addValuesToAccumulator(
@@ -326,7 +325,7 @@ export class TypeInference {
         const accumulator = new UnionAccumulator<
             NestedValueArray,
             NestedValueArray
-        >(this._conflateNumbers);
+        >(true);
         this.addValuesToAccumulator(valueArray, accumulator);
         return accumulator;
     }
@@ -399,7 +398,7 @@ export class TypeInference {
             const accumulator = new UnionAccumulator<
                 NestedValueArray,
                 NestedValueArray
-            >(this._conflateNumbers);
+            >(true);
             for (const key of propertyNames) {
                 this.addValuesToAccumulator(propertyValues[key], accumulator);
             }

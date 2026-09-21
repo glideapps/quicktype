@@ -33,13 +33,6 @@ export class GleamTargetLanguage extends TargetLanguage<
         return true;
     }
 
-    // `Int` and `Float` are distinct types, so JSON samples that mix
-    // `123` and `12.3` infer an `Int | Float` union rather than widening
-    // every whole number to a `Float` that re-encodes as `123.0`.
-    public get infersUnionsWithBothNumberTypes(): boolean {
-        return true;
-    }
-
     protected makeRenderer(renderContext: RenderContext): GleamRenderer {
         return new GleamRenderer(this, renderContext);
     }

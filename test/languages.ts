@@ -856,13 +856,12 @@ export const GleamLanguage: Language = {
     runCommand(sample: string) {
         return `gleam run -- "${sample}"`;
     },
-    // The JSON path infers an `Int | Float` union wherever samples mix whole
-    // and fractional numbers, but JSON Schema can only say `number`, so code
-    // generated via the schema collapses those unions to `Float` and can never
-    // be byte-identical. Compile and round-trip the schema-path code instead.
-    diffViaSchema: false,
-    roundtripViaSchema: true,
-    skipDiffViaSchema: [],
+    diffViaSchema: true,
+    // These inputs name types/fields/enum cases differently on the JSON and
+    // JSON-Schema paths (e.g. `link_type` vs `link_link_type`, enum case
+    // `Leaddatum` vs `Purple`); the generated Gleam is correct either way but
+    // not byte-identical. Every diffViaSchema language skips this class.
+    skipDiffViaSchema: ["bug427.json", "github-events.json", "recursive.json"],
     allowMissingNull: true,
     features: ["union", "integer"],
     output: "src/quicktype.gleam",
