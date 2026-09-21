@@ -58,6 +58,7 @@ jobs:
                     - scala3-upickle,schema-scala3-upickle
                     - elixir,schema-elixir,graphql-elixir
                     - elm,schema-elm
+                    - gleam,schema-gleam
                     - comment-injection-treesitter,comment-injection-typescript,comment-injection-typescript-zod,comment-injection-typescript-effect-schema
 
                     # Not yet started
@@ -204,6 +205,15 @@ jobs:
               with:
                   elixir-version: "1.15.7"
                   otp-version: "26.0"
+
+            - name: Install Gleam
+              if: ${{ contains(matrix.fixture, 'gleam') }}
+              uses: erlef/setup-beam@v1
+              with:
+                  # gleam_json delegates to OTP's built-in json module, which
+                  # requires OTP 27 or newer.
+                  otp-version: "27.0"
+                  gleam-version: "1.14.0"
 
             - run: QUICKTEST=true FIXTURE=${{ matrix.fixture }} npm run test:fixtures
               env:

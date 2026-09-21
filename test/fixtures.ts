@@ -1701,6 +1701,7 @@ export const allFixtures: Fixture[] = [
     new JSONFixture(languages.PikeLanguage),
     new JSONFixture(languages.HaskellLanguage),
     new JSONFixture(languages.ElixirLanguage),
+    new JSONFixture(languages.GleamLanguage),
     new JSONFixture(languages.JavaScriptPropTypesLanguage),
     new JSONSchemaJSONFixture(languages.CSharpLanguage),
     new JSONTypeScriptFixture(languages.CSharpLanguage),
@@ -1757,6 +1758,7 @@ export const allFixtures: Fixture[] = [
     new JSONSchemaFixture(languages.PikeLanguage),
     new JSONSchemaFixture(languages.HaskellLanguage),
     new JSONSchemaFixture(languages.ElixirLanguage),
+    new JSONSchemaFixture(languages.GleamLanguage),
     new CommentInjectionSchemaFixture(languages.TypeScriptLanguage),
     new CommentInjectionSchemaFixture(languages.ObjectiveCLanguage),
     new CommentInjectionSchemaFixture(languages.TypeScriptZodLanguage, [

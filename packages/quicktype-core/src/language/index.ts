@@ -5,6 +5,7 @@ export * from "./CSharp/index.js";
 export * from "./Dart/index.js";
 export * from "./Elixir/index.js";
 export * from "./Elm/index.js";
+export * from "./Gleam/index.js";
 export * from "./Golang/index.js";
 export * from "./Haskell/index.js";
 export * from "./Java/index.js";
