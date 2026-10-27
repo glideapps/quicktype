@@ -52,7 +52,7 @@
         "quicktype-graphql-input": "24.0.0",
         "quicktype-typescript-input": "24.0.0",
         "readable-stream": "^4.5.2",
-        "stream-json": "3.5.0",
+        "stream-json": "3.7.0",
         "string-to-stream": "^3.0.1",
         "wordwrap": "^1.0.0"
     },
