@@ -112,6 +112,11 @@ async function runQuicktype(
         justTypes && lang.optionDefinitions.some((o) => o.name === "just-types")
             ? ({ "just-types": "true" } as RendererOptions)
             : {};
+    // quicktype-core names the C# language "cs"; "csharp" is an alias.
+    if (lang.names.includes("csharp")) {
+        (rendererOptions as RendererOptions<"csharp">).framework =
+            configuration.get("csharp.framework", "SystemTextJson");
+    }
 
     const inputData = new InputData();
     switch (kind) {
