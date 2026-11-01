@@ -46,6 +46,15 @@
                     "default": true,
                     "description": "Produce only types; no (de-)serialization code"
                 },
+                "quicktype.csharp.framework": {
+                    "type": "string",
+                    "enum": [
+                        "NewtonSoft",
+                        "SystemTextJson"
+                    ],
+                    "default": "SystemTextJson",
+                    "description": "C# serialization framework: built-in System.Text.Json (default) or Newtonsoft.Json (NuGet)"
+                },
                 "quicktype.inferMaps": {
                     "type": "boolean",
                     "default": true,

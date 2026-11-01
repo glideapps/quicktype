@@ -23,6 +23,8 @@ This extension is available for free in the [Visual Studio Code Marketplace](htt
 
 -   `quicktype.justTypes`: Generate only types, or also produce (de)serialization code when using "Open quicktype". When using "Paste", you can pick between the commands for "types" and "code", without having to set this option.
 
+-   `quicktype.csharp.framework`: Serialization framework for generated C#: `SystemTextJson` (default, built into .NET, no NuGet needed) or `NewtonSoft`.
+
 -   `quicktype.inferMaps`, `quicktype.inferEnums`, `quicktype.inferDateTimes`, `quicktype.inferUuids`, `quicktype.inferBoolStrings`, `quicktype.inferIntegerStrings`: Tell quicktype whether it should try to infer those types from the input JSON. This is not a precise science, so sometimes the guess will be wrong, which is why you can turn them off through these options. Also, quicktype doesn't support dates, UUIDs and stringified integers/booleans in all target languages yet.
 
 ## Contribute!
