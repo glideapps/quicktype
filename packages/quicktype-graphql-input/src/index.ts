@@ -700,7 +700,9 @@ export class GraphQLInput implements Input<GraphQLSourceData> {
             );
             for (const [actualName, t] of newTopLevels) {
                 typeBuilder.addTopLevel(
-                    this._topLevels.size === 1 ? name : actualName,
+                    this._topLevels.size === 1 && newTopLevels.size === 1
+                        ? name
+                        : actualName,
                     t,
                 );
             }

@@ -1,0 +1,12 @@
+{
+    "viewer": {
+        "data": {
+            "viewer": { "id": "1", "name": "Alice" }
+        }
+    },
+    "user": {
+        "data": {
+            "user": { "id": "2", "name": "Bob" }
+        }
+    }
+}
