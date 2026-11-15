@@ -1,6 +1,9 @@
 {
   "type": "object",
   "properties": {
+    "cast": {
+      "type": "string"
+    },
     "minlength": {
       "type": "string",
       "minLength": 3

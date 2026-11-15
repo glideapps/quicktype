@@ -1,6 +1,9 @@
 {
   "type": "object",
   "properties": {
+    "len": {
+      "type": "string"
+    },
     "minOnly": {
       "type": "array",
       "items": {

@@ -890,6 +890,13 @@
             ],
             "title": "union_from_json"
         },
+        "from_str": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "from_str" }
+            ],
+            "title": "union_from_str"
+        },
         "func": {
             "oneOf": [
                 { "type": "number" },
@@ -1085,6 +1092,13 @@
                 { "type": "object", "additionalProperties": false, "title": "internal" }
             ],
             "title": "union_internal"
+        },
+        "isinstance": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "isinstance" }
+            ],
+            "title": "union_isinstance"
         },
         "IsoDateTimeOffsetConverter": {
             "oneOf": [
@@ -1519,6 +1533,13 @@
                 { "type": "object", "additionalProperties": false, "title": "number" }
             ],
             "title": "union_number"
+        },
+        "obj": {
+            "oneOf": [
+                { "type": "number" },
+                { "type": "object", "additionalProperties": false, "title": "obj" }
+            ],
+            "title": "union_obj"
         },
         "object": {
             "oneOf": [
