@@ -1,4 +1,5 @@
 {
+  "cast": "x",
   "minlength": "aaaa",
   "maxlength": "bbb",
   "minmaxlength": "cccc",

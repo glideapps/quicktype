@@ -125,6 +125,7 @@ friend
 from
 from_dict
 from_json
+from_str	"converted"
 func
 function
 get
@@ -153,6 +154,7 @@ int
 IntNode
 interface
 internal
+isinstance
 IsoDateTimeOffsetConverter
 iterable
 is
@@ -215,6 +217,7 @@ NULL
 null
 nullptr
 number
+obj
 object
 OffsetDateTime
 OffsetTime

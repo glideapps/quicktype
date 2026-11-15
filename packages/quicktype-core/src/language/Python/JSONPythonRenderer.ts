@@ -52,6 +52,42 @@ export type ConverterFunction =
     | "from-stringified-bool"
     | "is-type";
 
+// The name of a converter function in the generated code.
+function converterName(cf: ConverterFunction): string {
+    const name = cf.replace(/-/g, "_");
+    if (cf.startsWith("from-") || cf.startsWith("to-") || cf.startsWith("is-"))
+        return name;
+    return `from_${name}`;
+}
+
+// What the constraint checks of `from_dict` call: the built-in `len`, the
+// module `re` and `typing.cast`.
+const lenFunction = "len";
+const reModule = "re";
+const castFunction = "cast";
+
+// Whether `from_dict` may call a converter function: the deserializers
+// and the decoding transformers' converters. The others only `to_dict`
+// calls.
+const calledByFromDict: Record<ConverterFunction, boolean> = {
+    none: true,
+    bool: true,
+    int: true,
+    "from-float": true,
+    "to-float": false,
+    str: true,
+    "to-enum": false,
+    list: true,
+    "to-class": false,
+    dict: true,
+    union: true,
+    "from-date": true,
+    "from-time": true,
+    "from-datetime": true,
+    "from-stringified-bool": true,
+    "is-type": false,
+};
+
 interface TopLevelConverterNames {
     fromDict: Name;
     toDict: Name;
@@ -197,7 +233,27 @@ export class JSONPythonRenderer extends PythonRenderer {
 
     protected forbiddenForObjectProperties(c: ClassType, className: Name) {
         const result = super.forbiddenForObjectProperties(c, className);
-        result.names = result.names.concat(["from_dict", "to_dict"]);
+        // `from_dict` assigns each property to a local variable of the
+        // property's name, so no property may be named like something
+        // `from_dict` uses: its parameter, `isinstance`, the converter
+        // functions it calls (`from_dict`, the "dict" converter, is
+        // already the method's name) and what its constraint checks call.
+        const fromDictConverters = (
+            Object.keys(calledByFromDict) as ConverterFunction[]
+        )
+            .filter((cf) => calledByFromDict[cf])
+            .map(converterName)
+            .filter((name) => name !== "from_dict");
+        result.names = result.names.concat([
+            "from_dict",
+            "to_dict",
+            "obj",
+            "isinstance",
+            ...fromDictConverters,
+            lenFunction,
+            reModule,
+            castFunction,
+        ]);
         return result;
     }
 
@@ -242,7 +298,7 @@ export class JSONPythonRenderer extends PythonRenderer {
             return v;
         }
 
-        return [this.withTyping("cast"), "(", type, ", ", v, ")"];
+        return [this.withTyping(castFunction), "(", type, ", ", v, ")"];
     }
 
     protected emitNoneConverter(): void {
@@ -677,14 +733,7 @@ export class JSONPythonRenderer extends PythonRenderer {
     // Return the name of the Python converter function `cf`.
     protected conv(cf: ConverterFunction): Sourcelike {
         this._deserializerFunctions.add(cf);
-        const name = cf.replace(/-/g, "_");
-        if (
-            cf.startsWith("from-") ||
-            cf.startsWith("to-") ||
-            cf.startsWith("is-")
-        )
-            return name;
-        return ["from_", name];
+        return converterName(cf);
     }
 
     // Applies the converter function to `arg`
@@ -1123,9 +1172,22 @@ export class JSONPythonRenderer extends PythonRenderer {
                                 condition,
                             );
                         if (min !== undefined)
-                            check([min.toString(), " <= len(", name, ")"]);
+                            check([
+                                min.toString(),
+                                " <= ",
+                                lenFunction,
+                                "(",
+                                name,
+                                ")",
+                            ]);
                         if (max !== undefined)
-                            check(["len(", name, ") <= ", max.toString()]);
+                            check([
+                                lenFunction,
+                                "(",
+                                name,
+                                ") <= ",
+                                max.toString(),
+                            ]);
                         const [minValue, maxValue] =
                             minMaxValueForType(cp.type) ?? [];
                         if (minValue !== undefined)
@@ -1136,14 +1198,27 @@ export class JSONPythonRenderer extends PythonRenderer {
                         if (lo !== undefined || hi !== undefined) {
                             const raw = this.cast("str", property.value);
                             if (lo !== undefined)
-                                check([lo.toString(), " <= len(", raw, ")"]);
+                                check([
+                                    lo.toString(),
+                                    " <= ",
+                                    lenFunction,
+                                    "(",
+                                    raw,
+                                    ")",
+                                ]);
                             if (hi !== undefined)
-                                check(["len(", raw, ") <= ", hi.toString()]);
+                                check([
+                                    lenFunction,
+                                    "(",
+                                    raw,
+                                    ") <= ",
+                                    hi.toString(),
+                                ]);
                         }
                         const pattern = patternForType(cp.type);
                         if (pattern !== undefined)
                             check([
-                                this.withModuleImport("re"),
+                                this.withModuleImport(reModule),
                                 ".search(",
                                 this.string(pattern),
                                 ", ",

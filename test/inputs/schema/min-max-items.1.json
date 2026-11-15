@@ -1,4 +1,5 @@
 {
+  "len": "x",
   "minOnly": ["one", "two"],
   "maxOnly": [1, 2, 3],
   "minAndMax": [1.25, 2.5],

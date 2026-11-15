@@ -1,6 +1,9 @@
 {
   "type": "object",
   "properties": {
+    "re": {
+      "type": "string"
+    },
     "pattern1": {
       "type": "string",
       "pattern": "a[.]*"
