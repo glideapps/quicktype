@@ -272,7 +272,9 @@ export class JavaLegacyDateTimeProvider extends JavaDateTimeProvider {
                         });
                     },
                 );
-                this._renderer.emitLine("return null;");
+                this._renderer.emitLine(
+                    'throw new IllegalArgumentException("Unparseable date: " + str);',
+                );
             },
         );
 
