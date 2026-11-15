@@ -536,7 +536,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
             ],
             () => {
                 this.emitLine("enum ", enumName, " x = 0;");
-                this.emitBlock(["if (NULL != j)"], () => {
+                this.emitBlock(["if (cJSON_IsString(j))"], () => {
                     let onFirst = true;
                     const combinedName = allUpperWordStyle(
                         this.sourcelikeToString(enumName),
@@ -2502,7 +2502,7 @@ export class CJSONRenderer extends ConvenienceRenderer {
                                                         );
                                                     if (pattern !== undefined) {
                                                         this.emitLine(
-                                                            `regex_t regex; regcomp(&regex, "${stringEscape(pattern)}", REG_EXTENDED); if (regexec(&regex, ${value}->valuestring, 0, NULL, 0)) { regfree(&regex); cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; } regfree(&regex);`,
+                                                            `regex_t regex; if (0 == regcomp(&regex, "${stringEscape(pattern)}", REG_EXTENDED)) { if (regexec(&regex, ${value}->valuestring, 0, NULL, 0)) { regfree(&regex); cJSON_Delete${this.sourcelikeToString(className)}(x); return NULL; } regfree(&regex); }`,
                                                         );
                                                     }
                                                     if (minLength !== undefined)
@@ -3004,21 +3004,14 @@ if (NULL == validated) {
     x${level > 0 ? level.toString() : ""}->${this.sourcelikeToString(name)} = x${child_level};
     cJSON_Delete${this.sourcelikeToString(className)}(x);
     return NULL;
-}
-${this.sourcelikeToString(cJSON.items?.deleteType ?? "")}(validated);`,
+}`,
                                                                                     );
                                                                                     this.emitLine(
                                                                                         "hashtable_add(x",
                                                                                         child_level.toString(),
                                                                                         ", e",
                                                                                         child_level.toString(),
-                                                                                        "->string, ",
-                                                                                        cJSON
-                                                                                            .items
-                                                                                            ?.getValue,
-                                                                                        "(e",
-                                                                                        child_level.toString(),
-                                                                                        "), sizeof(",
+                                                                                        "->string, validated, sizeof(",
                                                                                         cJSON
                                                                                             .items
                                                                                             ?.cType,
@@ -4985,13 +4978,31 @@ ${this.sourcelikeToString(cJSON.items?.deleteType ?? "")}(validated);`,
                                 type,
                                 false,
                             );
+                            const container =
+                                cJSON.cjsonType === "cJSON_Array"
+                                    ? {
+                                          create: ["list_create(false, NULL)"],
+                                          prefix: "list_add_tail(x->value, ",
+                                      }
+                                    : cJSON.cjsonType === "cJSON_Map"
+                                      ? {
+                                            create: [
+                                                "hashtable_create(",
+                                                this.hashtableSize,
+                                                ", false)",
+                                            ],
+                                            prefix: "hashtable_add(x->value, e->string, ",
+                                        }
+                                      : undefined;
+                            const items = cJSON.items;
                             if (
-                                cJSON.cjsonType === "cJSON_Array" &&
-                                cJSON.items !== undefined
+                                container !== undefined &&
+                                items !== undefined
                             ) {
-                                const items = cJSON.items;
                                 this.emitLine(
-                                    "x->value = list_create(false, NULL);",
+                                    "x->value = ",
+                                    container.create,
+                                    ";",
                                 );
                                 this.emitBlock(
                                     ["if (NULL != x->value)"],
@@ -5000,83 +5011,19 @@ ${this.sourcelikeToString(cJSON.items?.deleteType ?? "")}(validated);`,
                                         this.emitBlock(
                                             ["cJSON_ArrayForEach(e, j)"],
                                             () => {
-                                                const add = (
-                                                    cJSON: TypeCJSON,
-                                                ) => {
-                                                    if (
-                                                        cJSON.items
-                                                            ?.cjsonType ===
-                                                        "cJSON_Array"
-                                                    ) {
-                                                        /* Not supported */
-                                                    } else if (
-                                                        cJSON.items
-                                                            ?.cjsonType ===
-                                                        "cJSON_Map"
-                                                    ) {
-                                                        /* Not supported */
-                                                    } else if (
-                                                        cJSON.items
-                                                            ?.cjsonType ===
-                                                            "cJSON_Invalid" ||
-                                                        cJSON.items
-                                                            ?.cjsonType ===
-                                                            "cJSON_NULL"
-                                                    ) {
-                                                        this.emitLine(
-                                                            "list_add_tail(x->value, (",
-                                                            cJSON.items?.cType,
-                                                            " *)0xDEADBEAF, sizeof(",
-                                                            cJSON.items?.cType,
-                                                            " *));",
-                                                        );
-                                                    } else if (
-                                                        cJSON.items
-                                                            ?.cjsonType ===
-                                                        "cJSON_String"
-                                                    ) {
-                                                        this.emitLine(
-                                                            "list_add_tail(x->value, strdup(",
-                                                            cJSON.items
-                                                                ?.getValue,
-                                                            "(e)), sizeof(",
-                                                            cJSON.items?.cType,
-                                                            " *));",
-                                                        );
-                                                    } else if (
-                                                        cJSON.items
-                                                            ?.deleteType ===
-                                                        "cJSON_free"
-                                                    ) {
-                                                        this.emitLine(
-                                                            cJSON.items.cType,
-                                                            " * item = cJSON_malloc(sizeof(*item));",
-                                                        );
-                                                        this.emitLine(
-                                                            "if (NULL != item) { *item = ",
-                                                            cJSON.items
-                                                                .getValue,
-                                                            "(e); list_add_tail(x->value, item, sizeof(*item)); }",
-                                                        );
-                                                    } else {
-                                                        this.emitLine(
-                                                            "list_add_tail(x->value, ",
-                                                            // @ts-expect-error awaiting refactor
-                                                            cJSON.items
-                                                                ?.getValue,
-                                                            "(e), sizeof(",
-                                                            cJSON.items?.cType,
-                                                            " *));",
-                                                        );
-                                                    }
-                                                };
-
+                                                /* A map's elements are checked too, nullable or not */
                                                 if (
-                                                    !items.isNullable &&
-                                                    items.isType !== ""
+                                                    items.isType !== "" &&
+                                                    (cJSON.cjsonType ===
+                                                        "cJSON_Map" ||
+                                                        !items.isNullable)
                                                 ) {
                                                     this.emitLine(
-                                                        "if (!",
+                                                        "if (",
+                                                        items.isNullable
+                                                            ? "!cJSON_IsNull(e) && "
+                                                            : "",
+                                                        "!",
                                                         items.isType,
                                                         "(e)) { cJSON_Delete",
                                                         className,
@@ -5090,115 +5037,28 @@ ${this.sourcelikeToString(cJSON.items?.deleteType ?? "")}(validated);`,
                                                             "if (!cJSON_IsNull(e))",
                                                         ],
                                                         () => {
-                                                            add(cJSON);
+                                                            this.emitTopLevelAdd(
+                                                                container.prefix,
+                                                                items,
+                                                                className,
+                                                            );
                                                         },
                                                     );
                                                     this.emitBlock(
                                                         ["else"],
                                                         () => {
                                                             this.emitLine(
-                                                                "list_add_tail(x->value, (void *)0xDEADBEEF, sizeof(void *));",
+                                                                container.prefix,
+                                                                "(void *)0xDEADBEEF, sizeof(void *));",
                                                             );
                                                         },
                                                     );
                                                 } else {
-                                                    add(cJSON);
-                                                }
-                                            },
-                                        );
-                                    },
-                                );
-                            } else if (
-                                cJSON.cjsonType === "cJSON_Map" &&
-                                cJSON.items !== undefined
-                            ) {
-                                this.emitLine(
-                                    "x->value = hashtable_create(",
-                                    this.hashtableSize,
-                                    ", false);",
-                                );
-                                this.emitBlock(
-                                    ["if (NULL != x->value)"],
-                                    () => {
-                                        this.emitLine("cJSON * e = NULL;");
-                                        this.emitBlock(
-                                            ["cJSON_ArrayForEach(e, j)"],
-                                            () => {
-                                                const add = (
-                                                    cJSON: TypeCJSON,
-                                                ) => {
-                                                    if (
-                                                        cJSON.items
-                                                            ?.cjsonType ===
-                                                        "cJSON_Array"
-                                                    ) {
-                                                        /* Not supported */
-                                                    } else if (
-                                                        cJSON.items
-                                                            ?.cjsonType ===
-                                                        "cJSON_Map"
-                                                    ) {
-                                                        /* Not supported */
-                                                    } else if (
-                                                        cJSON.items
-                                                            ?.cjsonType ===
-                                                            "cJSON_Invalid" ||
-                                                        cJSON.items
-                                                            ?.cjsonType ===
-                                                            "cJSON_NULL"
-                                                    ) {
-                                                        this.emitLine(
-                                                            "hashtable_add(x->value, e->string, (",
-                                                            cJSON.items?.cType,
-                                                            " *)0xDEADBEEF, sizeof(",
-                                                            cJSON.items?.cType,
-                                                            " *));",
-                                                        );
-                                                    } else if (
-                                                        cJSON.items
-                                                            ?.cjsonType ===
-                                                        "cJSON_String"
-                                                    ) {
-                                                        this.emitLine(
-                                                            "hashtable_add(x->value, e->string, strdup(",
-                                                            cJSON.items
-                                                                ?.getValue,
-                                                            "(e)), sizeof(",
-                                                            cJSON.items?.cType,
-                                                            " *));",
-                                                        );
-                                                    } else {
-                                                        this.emitLine(
-                                                            "hashtable_add(x->value, e->string, ",
-                                                            // @ts-expect-error awaiting refactor
-                                                            cJSON.items
-                                                                ?.getValue,
-                                                            "(e), sizeof(",
-                                                            cJSON.items?.cType,
-                                                            " *));",
-                                                        );
-                                                    }
-                                                };
-
-                                                if (cJSON.items?.isNullable) {
-                                                    this.emitBlock(
-                                                        [
-                                                            "if (!cJSON_IsNull(e))",
-                                                        ],
-                                                        () => {
-                                                            add(cJSON);
-                                                        },
+                                                    this.emitTopLevelAdd(
+                                                        container.prefix,
+                                                        items,
+                                                        className,
                                                     );
-                                                    this.emitBlock(
-                                                        ["else"],
-                                                        () => {
-                                                            this.emitLine(
-                                                                "hashtable_add(x->value, e->string, (void *)0xDEADBEEF, sizeof(void *));",
-                                                            );
-                                                        },
-                                                    );
-                                                } else {
-                                                    add(cJSON);
                                                 }
                                             },
                                         );
@@ -5483,32 +5343,14 @@ ${this.sourcelikeToString(cJSON.items?.deleteType ?? "")}(validated);`,
                         cJSON.cjsonType === "cJSON_Array" &&
                         cJSON.items !== undefined
                     ) {
+                        const items = cJSON.items;
                         this.emitBlock(["if (NULL != x->value)"], () => {
                             this.emitLine(
-                                // @ts-expect-error awaiting refactor
-                                cJSON.items?.cType,
+                                items.cType,
                                 " * x1 = list_get_head(x->value);",
                             );
                             this.emitBlock(["while (NULL != x1)"], () => {
-                                if (cJSON.items?.isNullable) {
-                                    this.emitBlock(
-                                        ["if ((void *)0xDEADBEEF != x1)"],
-                                        () => {
-                                            this.emitLine(
-                                                // @ts-expect-error awaiting refactor
-                                                cJSON.items?.deleteType,
-                                                "(x1);",
-                                            );
-                                        },
-                                    );
-                                } else {
-                                    this.emitLine(
-                                        // @ts-expect-error awaiting refactor
-                                        cJSON.items?.deleteType,
-                                        "(x1);",
-                                    );
-                                }
-
+                                this.emitTopLevelDeleteItem(items, "x1");
                                 this.emitLine("x1 = list_get_next(x->value);");
                             });
                             this.emitLine(cJSON.deleteType, "(x->value);");
@@ -5517,6 +5359,7 @@ ${this.sourcelikeToString(cJSON.items?.deleteType ?? "")}(validated);`,
                         cJSON.cjsonType === "cJSON_Map" &&
                         cJSON.items !== undefined
                     ) {
+                        const items = cJSON.items;
                         this.emitBlock(["if (NULL != x->value)"], () => {
                             this.emitLine("char **keys = NULL;");
                             this.emitLine(
@@ -5529,36 +5372,16 @@ ${this.sourcelikeToString(cJSON.items?.deleteType ?? "")}(validated);`,
                                     ],
                                     () => {
                                         this.emitLine(
-                                            // @ts-expect-error awaiting refactor
-                                            cJSON.items?.cType,
+                                            items.cType,
                                             " *x2 = hashtable_lookup(x->value, keys[index]);",
                                         );
                                         this.emitBlock(
                                             ["if (NULL != x2)"],
                                             () => {
-                                                if (cJSON.items?.isNullable) {
-                                                    this.emitBlock(
-                                                        [
-                                                            "if ((",
-                                                            cJSON.items?.cType,
-                                                            " *)0xDEADBEEF != x2)",
-                                                        ],
-                                                        () => {
-                                                            this.emitLine(
-                                                                // @ts-expect-error awaiting refactor
-                                                                cJSON.items
-                                                                    ?.deleteType,
-                                                                "(x2);",
-                                                            );
-                                                        },
-                                                    );
-                                                } else {
-                                                    this.emitLine(
-                                                        // @ts-expect-error awaiting refactor
-                                                        cJSON.items?.deleteType,
-                                                        "(x2);",
-                                                    );
-                                                }
+                                                this.emitTopLevelDeleteItem(
+                                                    items,
+                                                    "x2",
+                                                );
                                             },
                                         );
                                     },
@@ -5587,6 +5410,93 @@ ${this.sourcelikeToString(cJSON.items?.deleteType ?? "")}(validated);`,
             },
         );
         this.ensureBlankLine();
+    }
+
+    /**
+     * Adds the element `e` to a top-level list or map
+     * @param prefix: the call that adds it, up to the element
+     * @param items: the element's type
+     * @param className: the top-level's name
+     */
+    private emitTopLevelAdd(
+        prefix: string,
+        items: TypeCJSON,
+        className: Name,
+    ): void {
+        if (
+            items.cjsonType === "cJSON_Array" ||
+            items.cjsonType === "cJSON_Map"
+        ) {
+            /* Not supported */
+        } else if (
+            items.cjsonType === "cJSON_Invalid" ||
+            items.cjsonType === "cJSON_NULL"
+        ) {
+            this.emitLine(
+                prefix,
+                "(",
+                items.cType,
+                " *)0xDEADBEEF, sizeof(",
+                items.cType,
+                " *));",
+            );
+        } else if (items.cjsonType === "cJSON_String") {
+            this.emitLine(
+                prefix,
+                "strdup(",
+                items.getValue,
+                "(e)), sizeof(",
+                items.cType,
+                " *));",
+            );
+        } else if (items.deleteType === "cJSON_free") {
+            this.emitLine(
+                items.cType,
+                " * item = cJSON_malloc(sizeof(*item));",
+            );
+            this.emitLine(
+                "if (NULL == item) { cJSON_Delete",
+                className,
+                "(x); return NULL; }",
+            );
+            this.emitLine("*item = ", items.getValue, "(e);");
+            this.emitLine(prefix, "item, sizeof(*item));");
+        } else {
+            this.emitLine(
+                prefix,
+                items.getValue,
+                "(e), sizeof(",
+                items.cType,
+                " *));",
+            );
+        }
+    }
+
+    /**
+     * Deletes an element of a top-level list or map, as the delete
+     * function of a class deletes a list's or map's element: the marker
+     * 0xDEADBEEF of null is not freed
+     * @param items: the element's type
+     * @param variable: the variable that holds the element
+     */
+    private emitTopLevelDeleteItem(items: TypeCJSON, variable: string): void {
+        if (
+            items.cjsonType === "cJSON_Array" ||
+            items.cjsonType === "cJSON_Map" ||
+            items.cjsonType === "cJSON_Invalid" ||
+            items.cjsonType === "cJSON_NULL"
+        ) {
+            /* Not supported, or nothing to do */
+        } else if (items.isNullable) {
+            this.emitBlock(
+                ["if ((void *)0xDEADBEEF != ", variable, ")"],
+                () => {
+                    this.emitLine(items.deleteType, "(", variable, ");");
+                },
+            );
+        } else {
+            this.emitLine(items.deleteType, "(", variable, ");");
+        }
     }
 
     /**
