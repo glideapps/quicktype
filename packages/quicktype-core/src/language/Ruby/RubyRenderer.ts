@@ -56,8 +56,11 @@ export class RubyRenderer extends ConvenienceRenderer {
         return true;
     }
 
+    // Classes and the unions that are emitted as classes (emitUnion) can be
+    // forward declared with `class Name < Dry::Struct; end`.
     protected canBeForwardDeclared(t: Type): boolean {
-        return t.kind === "class";
+        if (t.kind === "class") return true;
+        return t.kind === "union" && this.unionNeedsName(t as UnionType);
     }
 
     protected forbiddenNamesForGlobalNamespace(): readonly string[] {
