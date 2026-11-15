@@ -246,9 +246,15 @@ export const JavaLanguage: Language = {
     skipMiscJSON: false,
     skipSchema: ["optional-property.schema"],
     rendererOptions: {},
-    // The default is array-type=list; this keeps the T[] code path
-    // covered.
-    quickTestRendererOptions: [{ "array-type": "array" }],
+    quickTestRendererOptions: [
+        // The default is array-type=list; this keeps the T[] code path
+        // covered.
+        { "array-type": "array" },
+        // CI runs schema-java, not schema-java-datetime-legacy: this runs
+        // the legacy provider's date and time parsing, including the
+        // expected-failure sample.
+        ["optional-date-time.schema", { "datetime-provider": "legacy" }],
+    ],
     sourceFiles: ["src/language/Java/index.ts"],
 };
 
