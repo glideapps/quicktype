@@ -952,7 +952,12 @@ export const ObjectiveCLanguage: Language = {
         "blns-object.json",
     ],
     skipMiscJSON: false,
-    skipSchema: ["optional-property.schema"],
+    skipSchema: [
+        "optional-property.schema",
+        // A top-level array of null checks its items with `id.class`, which
+        // does not compile.
+        "top-level-null-array.schema",
+    ],
     rendererOptions: { functions: "true" },
     quickTestRendererOptions: [],
     sourceFiles: ["src/language/Objective-C/index.ts"],
@@ -1722,6 +1727,7 @@ export const PHPLanguage: Language = {
         "recursive-union-flattening.schema",
         // The driver does not support top-level arrays.
         "issue2680-top-level-array.schema",
+        "top-level-null-array.schema",
     ],
     rendererOptions: {},
     quickTestRendererOptions: [],
