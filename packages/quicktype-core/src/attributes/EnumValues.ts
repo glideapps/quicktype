@@ -1,4 +1,4 @@
-import { mapMap } from "collection-utils";
+import { areEqual, mapMap } from "collection-utils";
 
 import type {
     JSONSchemaAttributes,
@@ -18,6 +18,14 @@ import { TypeAttributeKind } from "./TypeAttributes.js";
 class EnumValuesTypeAttributeKind extends TypeAttributeKind<AccessorNames> {
     public constructor() {
         super("enumValues");
+    }
+
+    // Copies of an enum's values that are all the same are kept; any other
+    // combination still fails, because dropping a value the copies disagree
+    // on could give two cases the same value.
+    public combine(arr: AccessorNames[]): AccessorNames | undefined {
+        if (arr.every((values) => areEqual(values, arr[0]))) return arr[0];
+        return super.combine(arr);
     }
 
     public makeInferred(_: AccessorNames): undefined {

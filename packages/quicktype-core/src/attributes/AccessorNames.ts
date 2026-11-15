@@ -1,4 +1,5 @@
 import {
+    areEqual,
     iterableFirst,
     mapFromIterable,
     mapFromObject,
@@ -28,9 +29,36 @@ export type AccessorEntry = string | Map<string, string>;
 
 export type AccessorNames = Map<string, AccessorEntry>;
 
+// Combines the accessor names of types that turn out to be the same type,
+// such as an enum and the same enum in a union, or two enums with the same
+// cases: an entry they all agree on is kept; one they disagree on is
+// dropped, so that name falls back to the default.
+function combineAccessorNames(arr: AccessorNames[]): AccessorNames {
+    const result: AccessorNames = new Map();
+    const conflicting = new Set<string>();
+    for (const accessors of arr) {
+        for (const [key, entry] of accessors) {
+            if (conflicting.has(key)) continue;
+            const existing = result.get(key);
+            if (existing === undefined) {
+                result.set(key, entry);
+            } else if (!areEqual(existing, entry)) {
+                result.delete(key);
+                conflicting.add(key);
+            }
+        }
+    }
+
+    return result;
+}
+
 class AccessorNamesTypeAttributeKind extends TypeAttributeKind<AccessorNames> {
     public constructor() {
         super("accessorNames");
+    }
+
+    public combine(arr: AccessorNames[]): AccessorNames {
+        return combineAccessorNames(arr);
     }
 
     public makeInferred(_: AccessorNames): undefined {
