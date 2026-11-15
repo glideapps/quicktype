@@ -1,0 +1,21 @@
+{
+    "type": "object",
+    "properties": {
+        "f": {
+            "anyOf": [
+                { "type": "string", "enum": ["a", "b"] },
+                { "type": "null" }
+            ]
+        },
+        "g": { "$ref": "#/definitions/E" }
+    },
+    "required": ["f", "g"],
+    "additionalProperties": false,
+    "definitions": {
+        "E": {
+            "type": "string",
+            "enum": ["a", "b"],
+            "qt-accessors": { "a": "Alpha", "b": "Beta" }
+        }
+    }
+}
