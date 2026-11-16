@@ -65,7 +65,9 @@ export abstract class CompressedJSON<T> {
 
     private readonly _strings: string[] = [];
 
-    private readonly _stringIndexes: { [str: string]: number } = {};
+    // A Map, not a plain object: once an object has 2^23 properties, V8
+    // re-sorts all of them on every insert, which stalls big inputs.
+    private readonly _stringIndexes = new Map<string, number>();
 
     private readonly _objects: Value[][] = [];
 
@@ -147,14 +149,14 @@ export abstract class CompressedJSON<T> {
     }
 
     protected internString(s: string): number {
-        // biome-ignore lint/suspicious/noPrototypeBuiltins: Object.hasOwn is not in quicktype-core's es6 lib
-        if (Object.prototype.hasOwnProperty.call(this._stringIndexes, s)) {
-            return this._stringIndexes[s];
+        const existing = this._stringIndexes.get(s);
+        if (existing !== undefined) {
+            return existing;
         }
 
         const index = this._strings.length;
         this._strings.push(s);
-        this._stringIndexes[s] = index;
+        this._stringIndexes.set(s, index);
         return index;
     }
 
@@ -337,13 +339,11 @@ export abstract class CompressedJSON<T> {
             hashAccumulator = addHashCode(hashAccumulator, hashString(s));
         }
 
-        for (const s of Object.getOwnPropertyNames(
-            this._stringIndexes,
-        ).sort()) {
+        for (const s of Array.from(this._stringIndexes.keys()).sort()) {
             hashAccumulator = addHashCode(hashAccumulator, hashString(s));
             hashAccumulator = addHashCode(
                 hashAccumulator,
-                this._stringIndexes[s],
+                defined(this._stringIndexes.get(s)),
             );
         }
 
